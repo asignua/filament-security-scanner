@@ -72,7 +72,22 @@ final class Zones
                 continue;
             }
 
-            $zone = new Zone($name, $kind, rtrim($path, '/'), $disk);
+            // A zone outside the project root cannot be tracked: its findings would be stored
+            // with a pseudo-relative path (`tmp/x`) that every consumer resolves under
+            // `base_path()` again, so reverify misses the file and closes a live finding.
+            // Refuse it VISIBLY rather than scan it wrongly. Lexical on purpose: a symlinked
+            // `storage` (Deployer) is still "under the project" by its configured path.
+            $normalized = rtrim($path, '/');
+            $prefix = rtrim($base, '/').'/';
+
+            if (in_array('..', explode('/', $normalized), true)
+                || !(str_starts_with($normalized.'/', $prefix))) {
+                $issues[] = sprintf('zone "%s": %s is outside the project root (%s) and is not scanned; keep zones under base_path()', $name, $normalized, rtrim($base, '/'));
+
+                continue;
+            }
+
+            $zone = new Zone($name, $kind, $normalized, $disk);
 
             if (!$zone->exists()) {
                 // Not a config error but a fact: the directory may be absent on this

@@ -254,6 +254,10 @@ What the scanner deliberately does not cover:
   hardens how it calls git and raises one honest signal, `code.git-dir-writable`, when the PHP user can write to `.git`
   (not in `local` and `testing`, where that is normal). Keep `.git` owned by the deploy user and read-only for the PHP
   user, or switch git off and rely on the hash baselines.
+- **Zones must lie under `base_path()`.** A zone (a `root` or a `disk`, such as a media disk in `/data/media`) outside the
+  project root is refused with an issue in the run (`zone "…": … is outside the project root`) and is not scanned, because
+  findings are stored by a path relative to the project root. Mount such storage under the project (a symlink is fine) or
+  accept that it is not covered.
 - The scanner is detection, not protection: it sees what the web user can read, runs as that user, and a root-level attacker
   can switch it off.
 

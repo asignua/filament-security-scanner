@@ -27,7 +27,8 @@ use SplFileInfo;
  * `base_path().'/'.path`: quarantine will say "file not found",
  * `reverifyUnseen()` closes and reopens the finding every night, and fingerprints
  * may collide with a real `data/...` path. Deliberately not solved: no site on
- * the package is configured that way.
+ * the package is configured that way. {@see Zones::resolve()} now refuses such a zone with
+ * a visible issue.
  *
  * **Nested zones.** Zones may lie inside one another: `storage_app` covers the
  * whole application uploads directory, while `storage_public` and the site's
