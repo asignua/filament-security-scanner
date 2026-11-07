@@ -357,8 +357,11 @@ final class ScanRunner
         $model->path = PathNormalizer::storable($finding->path);
         $model->title = $finding->title;
         $model->evidence = $finding->evidenceArray();
-        $model->size = $finding->size;
-        $model->file_mtime = $finding->mtime;
+        // `size` and `file_mtime` are UNSIGNED columns fed from the file system: a file
+        // touched to 1960 has a negative mtime, and MariaDB rejects it (error 1264),
+        // which used to lose exactly the finding that mattered.
+        $model->size = $finding->size === null ? null : max(0, $finding->size);
+        $model->file_mtime = $finding->mtime === null ? null : max(0, $finding->mtime);
         $model->content_hash = $finding->contentHash;
         // The first run gives NO leniency to the status: the three files of the
         // incident had to light up on exactly that run. The leniency is only in
@@ -489,7 +492,12 @@ final class ScanRunner
                 $finding->status_note = null;
             }
 
-            $finding->save();
+            try {
+                $finding->save();
+            } catch (Throwable $e) {
+                // The file is alive; only the bookkeeping failed. Keep it seen and say so.
+                $issues?->add($finding->scanner, sprintf('failed to update finding %s: %s', PathNormalizer::storable((string) $finding->path), $e->getMessage()));
+            }
 
             $seen[$finding->fingerprint] = true;
         }

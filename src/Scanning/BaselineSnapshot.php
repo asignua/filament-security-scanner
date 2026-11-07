@@ -71,8 +71,9 @@ final class BaselineSnapshot
 
             // getSize()/getMTime() THROW on a failed stat (`@` does not help).
             try {
-                $size = (int) $file->getSize();
-                $mtime = (int) $file->getMTime();
+                // Unsigned columns: a negative mtime (`touch -d 1960-01-01`) is rejected by MariaDB.
+                $size = max(0, (int) $file->getSize());
+                $mtime = max(0, (int) $file->getMTime());
             } catch (Throwable) {
                 $size = 0;
                 $mtime = 0;
@@ -93,13 +94,13 @@ final class BaselineSnapshot
             ];
 
             if (count($batch) >= 500) {
-                SecurityBaselineEntry::query()->insert($batch);
+                self::insertBatch($batch);
                 $batch = [];
             }
         }
 
         if ($batch !== []) {
-            SecurityBaselineEntry::query()->insert($batch);
+            self::insertBatch($batch);
         }
 
         SecurityBaselineEntry::query()
@@ -107,6 +108,29 @@ final class BaselineSnapshot
             ->update(['complete' => true]);
 
         return $snapshotId;
+    }
+
+    /**
+     * One unwritable row must not lose its 499 neighbours (or abort the snapshot):
+     * on a failed batch, retry row by row and skip only the bad one.
+     *
+     * @param list<array<string, mixed>> $batch
+     */
+    private static function insertBatch(array $batch): void
+    {
+        try {
+            SecurityBaselineEntry::query()->insert($batch);
+
+            return;
+        } catch (Throwable) {
+            foreach ($batch as $row) {
+                try {
+                    SecurityBaselineEntry::query()->insert([$row]);
+                } catch (Throwable) {
+                    // skipped: a missing entry shows up as an "added" file at compare time
+                }
+            }
+        }
     }
 
     /** Pseudo-zone that holds the git HEAD recorded with the baseline. */
