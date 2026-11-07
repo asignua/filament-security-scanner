@@ -190,16 +190,25 @@ final class ScanRunner
                     // does not exist.
                     $rule = $rules->get($finding->ruleId);
 
+                    $refusal = null;
+
                     if ($isNew
                         && $rule instanceof Rule
                         && $model->path === $finding->path
-                        && Quarantine::mayAutoQuarantine($finding, $rule, $context, rtrim($context->base, '/').'/'.$finding->path)) {
+                        && Quarantine::mayAutoQuarantine($finding, $rule, $context, rtrim($context->base, '/').'/'.$finding->path, $refusal)) {
                         try {
                             Quarantine::move($model, auto: true);
                             $quarantined++;
                         } catch (Throwable $e) {
-                            $issues[] = sprintf('quarantine %s: %s', $finding->path, $e->getMessage());
+                            $message = sprintf('auto-quarantine failed for %s: %s', PathNormalizer::storable($finding->path), $e->getMessage());
+                            $issues[] = $message;
+                            $context->issues?->add($scanner->id(), $message);
                         }
+                    } elseif ($refusal !== null) {
+                        // Eligible for auto-quarantine but refused on containment: say so.
+                        $message = sprintf('auto-quarantine skipped for %s: %s', PathNormalizer::storable($finding->path), $refusal);
+                        $issues[] = $message;
+                        $context->issues?->add($scanner->id(), $message);
                     }
                 }
             } catch (Throwable $e) {

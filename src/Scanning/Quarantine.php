@@ -65,7 +65,7 @@ final class Quarantine
      *  8. size within the ceiling: moving a 2 GB video "just in case" is an
      *     incident of its own.
      */
-    public static function mayAutoQuarantine(Finding $finding, Rule $rule, ScanContext $context, string $absolutePath): bool
+    public static function mayAutoQuarantine(Finding $finding, Rule $rule, ScanContext $context, string $absolutePath, ?string &$refusal = null): bool
     {
         if (!(bool) config('security-scanner.quarantine.enabled', true)
             || !(bool) config('security-scanner.quarantine.auto', false)) {
@@ -103,10 +103,27 @@ final class Quarantine
             return false;
         }
 
+        // Containment is checked against the ZONE, not the project root: with `storage`
+        // symlinked to a shared directory (Deployer) the zone's realpath is legitimately
+        // outside `realpath(base)`. Symlinks INSIDE the zone are still refused, and a
+        // refusal here is reported through `$refusal` rather than swallowed.
         $real = realpath($absolutePath);
-        $base = realpath($context->base);
+        $zoneReal = null;
 
-        if ($real === false || $base === false || !str_starts_with($real, rtrim($base, '/').'/')) {
+        foreach ($context->zones as $zone) {
+            if ($zone->owns($finding->path, $context->base)) {
+                $zoneReal = realpath($zone->absolutePath);
+
+                break;
+            }
+        }
+
+        $parent = realpath(dirname($absolutePath));
+
+        if ($real === false || $zoneReal === false || $zoneReal === null || $parent === false
+            || !self::isWithin($real, rtrim($zoneReal, '/')) || !self::isWithin($parent, rtrim($zoneReal, '/'))) {
+            $refusal = 'resolves outside its zone (a symlinked directory?), left in place';
+
             return false;
         }
 
@@ -150,11 +167,13 @@ final class Quarantine
             throw new RuntimeException(sprintf('The file does not exist or is a symlink: %s', (string) $finding->path));
         }
 
+        // Containment is the ZONE's, not the project's: a symlinked `storage` puts a
+        // legitimate zone outside realpath(base). Symlinks below the zone root are
+        // still refused by assertSourceInZone().
         $real = realpath($source);
-        $realBase = realpath($base);
 
-        if ($real === false || $realBase === false || !str_starts_with($real, rtrim($realBase, '/').'/')) {
-            throw new RuntimeException('The path escapes the project');
+        if ($real === false) {
+            throw new RuntimeException('The path escapes the zone');
         }
 
         self::assertSourceInZone($source, $real, $zoneReal);
@@ -285,7 +304,7 @@ final class Quarantine
         // project, is_dir() in the branch below would follow it, and a legitimate
         // Root action ("Restore from quarantine") would write the file outside
         // the tree.
-        self::assertDestinationContained($base, dirname((string) $finding->path));
+        self::assertDestinationContained($zoneReal, self::zoneRelative($finding, $base), dirname((string) $finding->path));
 
         $targetDir = dirname($target);
 
@@ -496,39 +515,55 @@ final class Quarantine
     }
 
     /**
+     * Zone root as a path relative to the project (its CONFIGURED location, symlinks not resolved).
+     */
+    private static function zoneRelative(SecurityFinding $finding, string $base): string
+    {
+        $zone = Zones::forPath((string) $finding->path, $finding->zone);
+
+        if (!$zone instanceof Zone) {
+            throw new RuntimeException('The path is not inside a scanned zone');
+        }
+
+        return PathNormalizer::relative($zone->absolutePath, $base);
+    }
+
+    /**
      * Destination containment for `restore()`. `realpath()` is not suitable
      * directly here: the destination directory (or part of it) may not exist
-     * yet, which is why the check goes component by component FROM `$base`
+     * yet, which is why the check goes component by component FROM THE ZONE ROOT
      * DOWNWARDS, not the other way round: a symlink that replaced an
      * intermediate directory is caught before `is_dir()` in the `mkdir` branch
      * can follow it.
+     *
+     * The walk starts at the zone root, not at the project root: the components
+     * above it are the site's own layout (a symlinked `storage` is normal under
+     * Deployer), only what lies INSIDE the zone is attacker-reachable.
      */
-    private static function assertDestinationContained(string $base, string $relativeDir): void
+    private static function assertDestinationContained(string $zoneReal, string $zoneRelative, string $relativeDir): void
     {
-        $baseReal = realpath($base);
-
-        if ($baseReal === false) {
-            throw new RuntimeException('The destination path escapes the project');
+        if (!PathNormalizer::isInside($relativeDir, $zoneRelative)) {
+            throw new RuntimeException('The destination path escapes the zone');
         }
 
-        $baseReal = rtrim($baseReal, '/');
-        $deepestExistingPath = $baseReal;
+        $remainder = substr(PathNormalizer::relative($relativeDir), strlen($zoneRelative));
+        $deepestExistingPath = rtrim($zoneReal, '/');
 
-        foreach (explode('/', $relativeDir) as $segment) {
+        foreach (explode('/', $remainder) as $segment) {
             if ($segment === '' || $segment === '.') {
                 continue;
             }
 
             $candidate = $deepestExistingPath.'/'.$segment;
 
-            if (!file_exists($candidate)) {
+            if (!file_exists($candidate) && !is_link($candidate)) {
                 // The remaining components do not exist yet: mkdir() will create
                 // them empty, so there is nothing there to replace with a symlink.
                 break;
             }
 
             if (is_link($candidate)) {
-                throw new RuntimeException('The destination path escapes the project');
+                throw new RuntimeException('The destination path escapes the zone');
             }
 
             $deepestExistingPath = $candidate;
@@ -536,8 +571,8 @@ final class Quarantine
 
         $deepestExistingReal = realpath($deepestExistingPath);
 
-        if ($deepestExistingReal === false || !str_starts_with($deepestExistingReal.'/', $baseReal.'/')) {
-            throw new RuntimeException('The destination path escapes the project');
+        if ($deepestExistingReal === false || !self::isWithin($deepestExistingReal, rtrim($zoneReal, '/'))) {
+            throw new RuntimeException('The destination path escapes the zone');
         }
     }
 
