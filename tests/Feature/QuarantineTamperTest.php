@@ -88,4 +88,24 @@ class QuarantineTamperTest extends TestCase
             $this->assertFileDoesNotExist($this->root.'/public/index.php');
         }
     }
+
+    public function test_a_move_never_overwrites_an_existing_target(): void
+    {
+        $source = $this->root.'/storage/app/public/uploads/shell.php';
+        $target = $this->root.'/storage/app/public/uploads/taken.php';
+        file_put_contents($target, 'precious');
+
+        $this->assertFalse(Quarantine::moveWithoutOverwrite($source, $target));
+        $this->assertSame('precious', file_get_contents($target));
+        $this->assertFileExists($source);
+
+        symlink($this->root.'/nowhere', $this->root.'/storage/app/public/uploads/dangling.php');
+        $this->assertFalse(Quarantine::moveWithoutOverwrite($source, $this->root.'/storage/app/public/uploads/dangling.php'));
+        $this->assertFileExists($source);
+
+        $free = $this->root.'/storage/app/public/uploads/free.php';
+        $this->assertTrue(Quarantine::moveWithoutOverwrite($source, $free));
+        $this->assertFileDoesNotExist($source);
+        $this->assertSame('<?php echo "neutralized"; ?>', file_get_contents($free));
+    }
 }

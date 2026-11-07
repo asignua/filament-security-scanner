@@ -213,8 +213,21 @@ final class Quarantine
         // since the first check must not redirect the rename.
         self::assertSourceInZone($source, $real, $zoneReal);
 
-        if (!@rename($real, $target)) {
+        if (!self::moveWithoutOverwrite($real, $target)) {
             throw new RuntimeException(sprintf('Failed to move %s', (string) $finding->path));
+        }
+
+        // Re-checked AFTER the move: the copy must sit inside the quarantine root and
+        // be a regular file; otherwise a swapped directory redirected it, and it is
+        // put back where it came from.
+        $rootReal = realpath(self::root());
+        $targetReal = realpath($target);
+
+        if ($rootReal === false || $targetReal === false || is_link($target)
+            || !self::isWithin($targetReal, $rootReal)) {
+            @rename($target, $real);
+
+            throw new RuntimeException('The quarantine copy ended up outside the quarantine directory');
         }
 
         @chmod($target, 0600);
@@ -288,8 +301,18 @@ final class Quarantine
             throw new RuntimeException('The destination path escapes the zone');
         }
 
-        if (is_link($target) || !@rename($source, $target)) {
+        if (is_link($target) || !self::moveWithoutOverwrite($source, $target)) {
             throw new RuntimeException('Failed to restore the file');
+        }
+
+        // Re-checked AFTER the move: a destination directory swapped for a symlink
+        // since the check above must not leave the file outside the zone.
+        $placed = realpath($target);
+
+        if ($placed === false || is_link($target) || !self::isWithin($placed, $zoneReal)) {
+            @rename($target, $source);
+
+            throw new RuntimeException('The destination path escapes the zone');
         }
 
         $metaPath = dirname($source).'/'.self::metaFilenameFor(basename($source));
@@ -315,6 +338,34 @@ final class Quarantine
         $finding->notified_channels = null;
         $finding->notified_at = null;
         $finding->save();
+    }
+
+    /**
+     * Moves a file WITHOUT ever replacing an existing target: `link()` fails when the
+     * target exists (atomic), where `file_exists()` + `rename()` leaves a window in
+     * which the target can appear and be silently overwritten. Where hard links are
+     * unavailable it falls back to a last-moment existence check plus `rename()`.
+     *
+     * @internal
+     */
+    public static function moveWithoutOverwrite(string $source, string $target): bool
+    {
+        if (@link($source, $target)) {
+            if (!@unlink($source)) {
+                @unlink($target);
+
+                return false;
+            }
+
+            return true;
+        }
+
+        // `link()` also fails for an existing target: that is the refusal, not a fallback.
+        if (file_exists($target) || is_link($target)) {
+            return false;
+        }
+
+        return @rename($source, $target);
     }
 
     /**
