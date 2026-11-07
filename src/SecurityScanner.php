@@ -10,9 +10,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * The single entry point for the host application. Everything has a working
- * default: the package runs without a line of code in the host; hosts only ADD
- * their own (gates, recipients, config).
+ * The single entry point for the host application. Scanning, scheduling and the
+ * config have working defaults; access does not: the four gates must be defined
+ * by the host (see {@see self::can()}).
  */
 final class SecurityScanner
 {
@@ -91,17 +91,17 @@ final class SecurityScanner
     }
 
     /**
-     * Gate check with a default. Evaluated AT CALL TIME, not at boot: host service
-     * providers boot after package ones, so the host's Gate::define always makes it.
-     * The default is "anybody who got into the panel", so the package works without
-     * a line of code in the host; the host narrows it through
-     * Gate::define('security-scanner.view', ...).
+     * Gate check, DENY BY DEFAULT. Evaluated AT CALL TIME, not at boot: host
+     * service providers boot after package ones, so the host's Gate::define always
+     * makes it. An ability the host has not defined is denied for everybody: the
+     * findings list names files and holds quarantined web shells, so access must be
+     * a conscious decision, made with Gate::define('security-scanner.view', ...).
      *
-     * An undefined gate listed in {@see self::FALLBACK_ABILITIES} inherits its
-     * "elder" instead of the "everyone" default: `triage` (acknowledge/ignore -
-     * both take a finding off the alerts, ignore forever) without its own
-     * definition equals `quarantine`. Otherwise a host that widened `view` to
-     * editors would also hand them the right to silence a web shell.
+     * An undefined ability listed in {@see self::FALLBACK_ABILITIES} inherits its
+     * "elder" instead: `triage` (acknowledge/ignore - both take a finding off the
+     * alerts, ignore forever) without its own definition equals `quarantine`, so a
+     * host that opened `view` to editors does not also hand them the right to
+     * silence a web shell. The chain still ends in a denial when nothing is defined.
      */
     public static function can(string $ability): bool
     {
@@ -119,6 +119,6 @@ final class SecurityScanner
 
         $fallback = self::FALLBACK_ABILITIES[$ability] ?? null;
 
-        return $fallback !== null ? self::can($fallback) : true;
+        return $fallback !== null && self::can($fallback);
     }
 }

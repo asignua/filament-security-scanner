@@ -28,9 +28,8 @@ use UnitEnum;
  * UI - an audit log that can be edited is worth nothing. Only a finding's
  * STATUS can change, and that happens through separate table actions, not a form.
  *
- * Access goes through the gate {@see SecurityScanner::can()} ('view') with a
- * default of "anybody in the panel" - the host narrows it with
- * Gate::define('security-scanner.view', ...).
+ * Access goes through the gate {@see SecurityScanner::can()} ('view'). It is
+ * denied until the host defines it with Gate::define('security-scanner.view', ...).
  *
  * There is deliberately no separate resource for scan RUNS: the state of the
  * last run is shown by the list page's subheading. A second navigation entry
