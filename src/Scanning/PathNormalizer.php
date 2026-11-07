@@ -186,7 +186,7 @@ final class PathNormalizer
      * entry like `storage/*` would silently cover the entire subtree content together with the zone
      * that is exactly what needs to be scanned.
      */
-    public static function matchesGlob(string $path, string $pattern): bool
+    public static function matchesGlob(string $path, string $pattern, bool $ignoreCase = false): bool
     {
         $path = self::relative($path);
         $pattern = self::relative($pattern);
@@ -224,7 +224,7 @@ final class PathNormalizer
             $regex .= preg_quote($char, '~');
         }
 
-        return (bool) preg_match('~^'.$regex.'$~', $path);
+        return (bool) preg_match('~^'.$regex.'$~'.($ignoreCase ? 'i' : ''), $path);
     }
 
     /**

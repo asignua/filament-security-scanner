@@ -21,11 +21,13 @@ final class PathMatcher implements Matcher
 {
     /**
      * @param list<string> $patterns
-     * @param list<string> $except   exception paths that are NOT considered a match
+     * @param list<string> $except     exception paths that are NOT considered a match (always case-sensitive)
+     * @param bool         $ignoreCase whether the PATTERNS ignore case (`shell.PHP`)
      */
     public function __construct(
         private readonly array $patterns,
         private readonly array $except = [],
+        private readonly bool $ignoreCase = false,
     ) {}
 
     public static function type(): string
@@ -47,7 +49,7 @@ final class PathMatcher implements Matcher
         }
 
         foreach ($this->patterns as $pattern) {
-            if (PathNormalizer::matchesGlob($subject->path, $pattern)) {
+            if (PathNormalizer::matchesGlob($subject->path, $pattern, $this->ignoreCase)) {
                 return [Evidence::plain($ruleId, $subject->path, ['pattern' => $pattern])];
             }
         }

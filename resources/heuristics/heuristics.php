@@ -25,6 +25,13 @@ use Asignua\FilamentSecurityScanner\Enums\SecurityZoneKind;
 */
 
 $uploadZones = [SecurityZoneKind::UploadWeb->value, SecurityZoneKind::UploadPrivate->value];
+// Everything a web server hands to the PHP engine. Matched CASE-INSENSITIVELY:
+// `shell.PHP` runs exactly like `shell.php`.
+$phpExtensions = ['php', 'phtml', 'phar', 'pht', 'php3', 'php4', 'php5', 'php6', 'php7', 'php8'];
+$webrootPhpPatterns = array_merge(...array_map(
+    static fn (string $ext): array => ['public/*.'.$ext, 'public/**/*.'.$ext],
+    $phpExtensions,
+));
 $codeZones = [SecurityZoneKind::Code->value, SecurityZoneKind::Webroot->value];
 
 return [
@@ -109,7 +116,10 @@ return [
             'message' => 'security-scanner::rules.Unexpected PHP file in the web root',
             'matcher' => [
                 'type' => 'path',
-                'patterns' => ['public/*.php', 'public/**/*.php'],
+                'patterns' => $webrootPhpPatterns,
+                // The patterns ignore case; the exception does NOT: `public/INDEX.php`
+                // is a different file on Linux, and not the front controller.
+                'ignore_case' => true,
                 'except' => ['public/index.php'],
             ],
         ],

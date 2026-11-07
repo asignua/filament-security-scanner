@@ -98,7 +98,7 @@ final class MatcherFactory
             throw new InvalidSecurityRuleException($ruleId, 'matcher.patterns is empty');
         }
 
-        return new PathMatcher($patterns, self::stringList($ruleId, $config, 'except'));
+        return new PathMatcher($patterns, self::stringList($ruleId, $config, 'except'), (bool) ($config['ignore_case'] ?? false));
     }
 
     /**
