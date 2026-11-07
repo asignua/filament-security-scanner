@@ -41,4 +41,5 @@ return [
     'Git HEAD moved since the last baseline' => 'Git HEAD przesunął się od ostatniej bazy odniesienia',
     'Storage link in the web root points elsewhere' => 'Link storage w katalogu głównym WWW wskazuje inne miejsce',
     'Git directory is writable by the web user' => 'Katalog git jest zapisywalny dla użytkownika WWW',
+    'No git HEAD was recorded by a baseline' => 'Żadna baza odniesienia nie zapisała git HEAD',
 ];

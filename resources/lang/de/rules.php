@@ -41,4 +41,5 @@ return [
     'Git HEAD moved since the last baseline' => 'Git HEAD hat sich seit der letzten Baseline verschoben',
     'Storage link in the web root points elsewhere' => 'Storage-Link im Webroot zeigt auf ein anderes Ziel',
     'Git directory is writable by the web user' => 'Das Git-Verzeichnis ist für den Webnutzer beschreibbar',
+    'No git HEAD was recorded by a baseline' => 'Keine Baseline hat einen Git-HEAD aufgezeichnet',
 ];

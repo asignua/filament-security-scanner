@@ -149,11 +149,6 @@ final class CodeIntegrityScanner implements Scanner
     private function headMoved(GitStatus $git, ScanContext $context): Generator
     {
         $recorded = BaselineSnapshot::recordedHead();
-
-        if ($recorded === null) {
-            return;
-        }
-
         $current = $git->head(full: true);
 
         if ($current === null) {
@@ -162,8 +157,22 @@ final class CodeIntegrityScanner implements Scanner
             return;
         }
 
+        // The SHA is part of the path, hence of the fingerprint: an ignored finding must
+        // not mask a LATER move to another commit.
+        $path = 'HEAD#'.substr($current, 0, 12);
+
+        if ($recorded === null) {
+            // Without a recorded HEAD a commit made on the server is invisible: say so.
+            yield $this->make($context, 'code.head-unrecorded', $path, [
+                'current' => substr($current, 0, 12),
+                'hint' => 'run security:baseline as part of the deploy',
+            ]);
+
+            return;
+        }
+
         if ($current !== $recorded) {
-            yield $this->make($context, 'code.git-head-moved', 'HEAD', [
+            yield $this->make($context, 'code.git-head-moved', $path, [
                 'recorded' => substr($recorded, 0, 12),
                 'current' => substr($current, 0, 12),
                 'hint' => 'run security:baseline as part of the deploy',

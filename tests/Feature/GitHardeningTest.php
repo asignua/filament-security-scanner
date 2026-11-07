@@ -265,13 +265,14 @@ class GitHardeningTest extends TestCase
         Artisan::call('security:baseline', ['--zone' => ['vendor']]);
         $this->scan();
         $this->assertSame([], SecurityFinding::query()->where('rule_id', 'code.git-head-moved')->pluck('path')->all());
+        $this->assertSame([], SecurityFinding::query()->where('rule_id', 'code.head-unrecorded')->pluck('path')->all());
 
         file_put_contents($this->root.'/app/Hidden.php', '<?php echo "neutralized";');
         $this->git(['add', '-A']);
         $this->git(['-c', 'user.email=t@example.test', '-c', 'user.name=t', 'commit', '-q', '-m', 'hide']);
 
         $this->scan();
-        $this->assertSame(['HEAD'], SecurityFinding::query()->where('rule_id', 'code.git-head-moved')->pluck('path')->all());
+        $this->assertSame(['HEAD#'.substr(trim($this->git(['rev-parse', 'HEAD'])), 0, 12)], SecurityFinding::query()->where('rule_id', 'code.git-head-moved')->pluck('path')->all());
 
         Artisan::call('security:baseline', ['--zone' => ['vendor']]);
         $this->scan();

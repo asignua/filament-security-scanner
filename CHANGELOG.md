@@ -94,6 +94,14 @@ unchanged, so stored findings, quarantine copies and settings keep working. The 
   filters run with `GIT_LFS_SKIP_SMUDGE=1` and non-required (a read-only `.git` no longer makes git "unavailable") and are
   emptied when `alias.lfs` or another trick is present. `alias.lfs`, `remote.*.uploadpack`, `remote.*.promisor` and
   `extensions.partialClone` are reported by `code.git-executable-config`.
+- **A hygiene stage that throws no longer ends the run silently** (for example `chmod 0311 public` made the world-writable
+  walk throw): the stage is recorded as an issue, the scanner is marked incomplete and `hygiene.scanner-degraded` is
+  always evaluated.
+- New rule `code.head-unrecorded` (medium): git is available but no baseline ever recorded a `HEAD`. The `HEAD` SHA is now
+  part of the path of `code.git-head-moved` too, so an ignored finding does not mask a later move.
+- **Restore / move fallback no longer uses `rename()`**: across filesystems it copied through a symlink planted at the
+  target and overwrote what it pointed at. It copies with `fopen($target, 'xb')` and then removes the source.
+- New translation key (all 10 locales) for `code.head-unrecorded`.
 - New rule `code.git-dir-writable` (medium): the PHP user can write to `.git`, so git results cannot be trusted. Not raised
   when `app.env` is `local` or `testing`. README "Limits" explains the trust model.
 - New translation key (all 10 locales) for `code.git-dir-writable`.

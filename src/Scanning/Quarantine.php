@@ -365,7 +365,57 @@ final class Quarantine
             return false;
         }
 
-        return @rename($source, $target);
+        // NOT `rename()`: across filesystems PHP silently turns it into a copy that
+        // follows a symlink planted at the target in the meantime and overwrites
+        // whatever it points at.
+        return self::copyWithoutOverwrite($source, $target);
+    }
+
+    /**
+     * Copies with `fopen($target, 'xb')` (O_EXCL: refuses an existing file AND any
+     * symlink, dangling or not), then removes the source.
+     *
+     * @internal
+     */
+    public static function copyWithoutOverwrite(string $source, string $target): bool
+    {
+        $in = @fopen($source, 'rb');
+
+        if ($in === false) {
+            return false;
+        }
+
+        $out = @fopen($target, 'xb');
+
+        if ($out === false) {
+            fclose($in);
+
+            return false;
+        }
+
+        $copied = stream_copy_to_stream($in, $out) !== false;
+        fclose($in);
+        $closed = fclose($out);
+
+        if (!$copied || !$closed) {
+            @unlink($target);
+
+            return false;
+        }
+
+        $mode = @fileperms($source);
+
+        if ($mode !== false) {
+            @chmod($target, $mode & 0777);
+        }
+
+        if (!@unlink($source)) {
+            @unlink($target);
+
+            return false;
+        }
+
+        return true;
     }
 
     /**

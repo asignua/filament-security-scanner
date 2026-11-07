@@ -41,4 +41,5 @@ return [
     'Git HEAD moved since the last baseline' => 'Git HEAD змінився після останнього baseline',
     'Storage link in the web root points elsewhere' => 'Посилання storage у корені вебу веде кудись інде',
     'Git directory is writable by the web user' => 'Каталог git доступний для запису веб-користувачу',
+    'No git HEAD was recorded by a baseline' => 'Baseline не записав git HEAD',
 ];

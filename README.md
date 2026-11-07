@@ -93,7 +93,9 @@ Until the first snapshot exists the scanner reports "no baseline snapshot for th
 
 The same command records the git `HEAD` of the deploy. A commit makes `git status` clean again, so a `HEAD` that differs
 from the recorded one is reported as `code.git-head-moved` until the baseline is taken again: **the deploy must run
-`security:baseline`**, otherwise every commit on the server raises that finding.
+`security:baseline`**, otherwise every commit on the server raises that finding. While no `HEAD` was ever recorded the scanner
+raises `code.head-unrecorded` instead (silence there would hide every commit made on the server). The `HEAD` SHA is part
+of both findings' fingerprint, so ignoring one does not mask a later move.
 
 ### Schedule
 

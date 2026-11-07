@@ -60,10 +60,21 @@ final class EnvironmentHygieneScanner implements Scanner
      */
     public function scan(ScanContext $context): Generator
     {
-        yield from $this->application($context);
-        yield from $this->phpRuntime($context);
-        yield from $this->webroot($context);
-        yield from $this->registry($context);
+        // A stage that throws (an unreadable webroot, `chmod 0311 public`) used to end the
+        // whole generator: the run went on without a finding or an alert, and the
+        // degradation report below never ran. Now the stage is recorded as a problem
+        // and `degradation()` ALWAYS runs.
+        foreach (['application', 'phpRuntime', 'webroot', 'registry'] as $stage) {
+            try {
+                yield from $this->{$stage}($context);
+            } catch (Throwable $e) {
+                $message = sprintf('stage "%s" failed and was NOT completed: %s', $stage, $e->getMessage());
+                $this->issues[] = $message;
+                $context->issues?->markIncomplete($this->id());
+                $context->issues?->add($this->id().':'.$stage, $message);
+            }
+        }
+
         yield from $this->degradation($context);
     }
 
