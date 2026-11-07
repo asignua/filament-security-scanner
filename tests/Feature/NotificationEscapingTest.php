@@ -10,6 +10,7 @@ use Asignua\FilamentSecurityScanner\SecurityScanner;
 use Asignua\FilamentSecurityScanner\Tests\Concerns\MakesFindings;
 use Asignua\FilamentSecurityScanner\Tests\TestCase;
 use Filament\Notifications\Notification;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
@@ -70,5 +71,32 @@ class NotificationEscapingTest extends TestCase
         } finally {
             File::deleteDirectory($root);
         }
+    }
+
+    public function test_the_database_notification_is_written_in_the_recipients_locale(): void
+    {
+        app()->setLocale('en');
+        $user = LocaleUser::query()->firstOrFail();
+        SecurityScanner::notifyUsersUsing(static fn () => new Collection([$user]));
+        $this->makeFinding('storage/app/public/uploads/a.php');
+
+        SecurityAlerts::dispatch();
+
+        $data = $user->notifications()->firstOrFail()->data;
+        app()->setLocale('uk');
+        $expected = __('security-scanner::ui.Security findings: :count new', ['count' => 1]);
+
+        $this->assertSame($expected, $data['title'] ?? null);
+        $this->assertNotSame('Security findings: 1 new', $data['title'] ?? null);
+    }
+}
+
+class LocaleUser extends User implements HasLocalePreference
+{
+    protected $table = 'users';
+
+    public function preferredLocale(): string
+    {
+        return 'uk';
     }
 }

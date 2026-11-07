@@ -13,6 +13,7 @@ use Asignua\FilamentSecurityScanner\Models\SecurityFinding;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -202,6 +203,31 @@ final class SecurityAlerts
             return false;
         }
 
+        foreach ($recipients as $user) {
+            // Built per recipient, in THEIR locale: the scan runs in the CLI/queue
+            // locale, and a notification stored in the database is shown as written.
+            $locale = $user instanceof HasLocalePreference ? $user->preferredLocale() : null;
+            $previous = app()->getLocale();
+
+            if (is_string($locale) && $locale !== '') {
+                app()->setLocale($locale);
+            }
+
+            try {
+                self::panelNotification($findings, $isFirstRun)->sendToDatabase($user);
+            } finally {
+                app()->setLocale($previous);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param Collection<int, SecurityFinding> $findings
+     */
+    private static function panelNotification(Collection $findings, bool $isFirstRun): Notification
+    {
         $top = $findings->first();
         $title = $isFirstRun
             ? __('security-scanner::ui.Security baseline inventory: :count findings', ['count' => $findings->count()])
@@ -224,11 +250,7 @@ final class SecurityAlerts
             ? $notification->danger()
             : $notification->warning();
 
-        foreach ($recipients as $user) {
-            $notification->sendToDatabase($user);
-        }
-
-        return true;
+        return $notification;
     }
 
     /**
