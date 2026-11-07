@@ -309,7 +309,7 @@ final class Quarantine
         // since the check above must not leave the file outside the zone.
         $placed = realpath($target);
 
-        if ($placed === false || is_link($target) || !self::isWithin($placed, $zoneReal)) {
+        if ($placed === false || !self::isWithin($placed, $zoneReal)) {
             @rename($target, $source);
 
             throw new RuntimeException('The destination path escapes the zone');

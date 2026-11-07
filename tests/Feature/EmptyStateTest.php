@@ -6,8 +6,8 @@ namespace Asignua\FilamentSecurityScanner\Tests\Feature;
 
 use Asignua\FilamentSecurityScanner\Enums\SecurityScanStatus;
 use Asignua\FilamentSecurityScanner\Enums\SecurityScanTrigger;
-use Asignua\FilamentSecurityScanner\Models\SecurityScan;
 use Asignua\FilamentSecurityScanner\Filament\Resources\Security\Pages\ListSecurityFindings;
+use Asignua\FilamentSecurityScanner\Models\SecurityScan;
 use Asignua\FilamentSecurityScanner\Tests\TestCase;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;

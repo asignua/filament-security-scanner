@@ -71,6 +71,18 @@ unchanged, so stored findings, quarantine copies and settings keep working. The 
   must run `security:baseline`.
 - **`public/storage` is allowlisted only as the storage symlink.** A link to anything else (for example `..`, which exposes
   `.env`) is scanned and reported as `hygiene.foreign-storage-link`.
+- **Quarantine and restore decide by the zone the path really lies in**, not by the row's `zone_kind` column: a tampered row
+  could move `public/index.php` and restore a file into the webroot. Moves never overwrite an existing target (`link()` +
+  `unlink()`), and the placement is verified afterwards.
+- **Database notifications are written in the recipient's locale** (`HasLocalePreference`, otherwise the app locale)
+  instead of the CLI locale the scan runs in.
+- The empty state distinguishes "no scan has run yet" from "scans ran and found nothing" (new translation keys, 10 locales).
+- **Quarantine and restore decide by the zone the path really lies in**, not by the row's `zone_kind` column: a tampered row
+  could move `public/index.php` and restore a file into the webroot. Moves never overwrite an existing target (`link()` +
+  `unlink()`), and the placement is verified afterwards.
+- **Database notifications are written in the recipient's locale** (`HasLocalePreference`, otherwise the app locale)
+  instead of the CLI locale the scan runs in.
+- The empty state distinguishes "no scan has run yet" from "scans ran and found nothing" (new translation keys, 10 locales).
 - A file named `.php` (or `.php.jpg`) now counts as PHP-executable.
 
 ### Added

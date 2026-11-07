@@ -38,7 +38,7 @@ final class GitStatus
     /** @var list<string> */
     private array $issues = [];
 
-    /** @var list<array{key: string, filter: string|null}>|false|null false = detection failed */
+    /** @var false|list<array{key: string, filter: string|null}>|null false = detection failed */
     private array|false|null $commandConfig = null;
 
     public function __construct(private readonly string $base) {}
@@ -250,10 +250,10 @@ final class GitStatus
      */
     public function executableConfig(): array
     {
-        return array_values(array_map(
+        return array_map(
             static fn (array $item): string => $item['key'],
             $this->commandConfig() ?? [],
-        ));
+        );
     }
 
     /**
