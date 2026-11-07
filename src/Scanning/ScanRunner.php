@@ -34,6 +34,8 @@ use Throwable;
  */
 final class ScanRunner
 {
+    private const string OVERSIZED_RULE = 'obf.oversized-unreadable';
+
     /**
      * @param list<Scanner> $scanners
      */
@@ -422,6 +424,8 @@ final class ScanRunner
             $query->whereNotIn('fingerprint', array_keys($seen));
         }
 
+        $seen = $this->reverifyHashless($seen, $scan, $rules, $base, $ran, $issues);
+
         foreach ($query->get() as $finding) {
             // The rule must STILL belong to the scanner on whose behalf the finding
             // was recorded. A rule that moved between scanners or disappeared from
@@ -496,6 +500,93 @@ final class ScanRunner
                 $finding->save();
             } catch (Throwable $e) {
                 // The file is alive; only the bookkeeping failed. Keep it seen and say so.
+                $issues?->add($finding->scanner, sprintf('failed to update finding %s: %s', PathNormalizer::storable((string) $finding->path), $e->getMessage()));
+            }
+
+            $seen[$finding->fingerprint] = true;
+        }
+
+        return $seen;
+    }
+
+    /**
+     * The same "unread != gone" rule for findings WITHOUT a content hash.
+     *
+     * `obf.oversized-unreadable` is issued for a file that was not read at all, so it has
+     * no hash to compare; the mtime gate then skips the old unchanged file and, without
+     * this, the finding closed on the second quiet run with the file still on disk. We
+     * re-stat instead: still a regular file and still above the ceiling means the
+     * condition holds (a shrunk or removed file is left to closeUnseen()).
+     *
+     * @param array<string, true> $seen
+     * @param list<string>        $ran
+     *
+     * @return array<string, true>
+     */
+    private function reverifyHashless(array $seen, SecurityScan $scan, RuleSet $rules, string $base, array $ran, ?ScanIssues $issues): array
+    {
+        $query = SecurityFinding::query()
+            ->whereIn('scanner', $ran)
+            ->where('rule_id', self::OVERSIZED_RULE)
+            ->whereNull('content_hash')
+            ->whereIn('status', [
+                SecurityFindingStatus::New->value,
+                SecurityFindingStatus::Acknowledged->value,
+                SecurityFindingStatus::Resolved->value,
+            ]);
+
+        if ($seen !== []) {
+            $query->whereNotIn('fingerprint', array_keys($seen));
+        }
+
+        $ceiling = (int) config('security-scanner.max_file_size', 33554432);
+
+        foreach ($query->get() as $finding) {
+            $rule = $rules->get($finding->rule_id);
+
+            if (!$rule instanceof Rule || $rule->scanner !== $finding->scanner) {
+                continue;
+            }
+
+            if (PathNormalizer::wasAltered((string) $finding->path)) {
+                $seen[$finding->fingerprint] = true;
+
+                continue;
+            }
+
+            $absolute = rtrim($base, '/').'/'.(string) $finding->path;
+
+            if (!is_file($absolute) || is_link($absolute)) {
+                continue;
+            }
+
+            $size = @filesize($absolute);
+
+            if ($size === false) {
+                $seen[$finding->fingerprint] = true;
+                $issues?->addUnreadableFile($finding->scanner, (string) $finding->path, 'cannot be stat-ed');
+
+                continue;
+            }
+
+            if ($size <= $ceiling) {
+                continue;
+            }
+
+            $finding->times_seen = $finding->times_seen + 1;
+            $finding->last_seen_at = now();
+            $finding->last_scan_id = $scan->id;
+
+            if ($finding->status === SecurityFindingStatus::Resolved) {
+                $finding->status = SecurityFindingStatus::New;
+                $finding->notified_channels = null;
+                $finding->notified_at = null;
+                $finding->status_note = null;
+            }
+
+            try {
+                $finding->save();
+            } catch (Throwable $e) {
                 $issues?->add($finding->scanner, sprintf('failed to update finding %s: %s', PathNormalizer::storable((string) $finding->path), $e->getMessage()));
             }
 
