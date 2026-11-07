@@ -236,8 +236,17 @@ What the scanner deliberately does not cover:
   but the application and rebuild them on deploy (`php artisan optimize:clear` / `optimize`).
 - `public/storage` is trusted only while it is a symlink to the public storage directory (`filesystems.disks.public.root`);
   any other target is reported as `hygiene.foreign-storage-link`.
-- Filters of the git config are switched off while the scanner runs git, except exact git-lfs commands; anything else is
-  reported as `code.git-executable-config`.
+- Filters of the git config are switched off while the scanner runs git, except exact git-lfs commands (those too once an
+  `alias.lfs` or another command-running key is present); anything else, `alias.lfs` and the partial-clone keys
+  (`remote.*.uploadpack`, `remote.*.promisor`, `extensions.partialClone`) are reported as `code.git-executable-config`.
+  Git runs with overrides passed through `GIT_CONFIG_*`, `--no-lazy-fetch`, `--no-replace-objects`,
+  `--ignore-submodules=all` (gitlinks are listed once, not compared) and strict stat settings; every inherited `GIT_*`
+  variable is dropped.
+- **The git comparison is only as trustworthy as `.git`.** Someone who can write to `.git` can make git say anything
+  (replace refs, rewrite the index, weaken the stat checks), and the scanner does not try to detect each such trick. It
+  hardens how it calls git and raises one honest signal, `code.git-dir-writable`, when the PHP user can write to `.git`
+  (not in `local` and `testing`, where that is normal). Keep `.git` owned by the deploy user and read-only for the PHP
+  user, or switch git off and rely on the hash baselines.
 - The scanner is detection, not protection: it sees what the web user can read, runs as that user, and a root-level attacker
   can switch it off.
 

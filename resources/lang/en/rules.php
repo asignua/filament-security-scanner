@@ -40,4 +40,5 @@ return [
     'Git config makes git run a command' => 'Git config makes git run a command',
     'Git HEAD moved since the last baseline' => 'Git HEAD moved since the last baseline',
     'Storage link in the web root points elsewhere' => 'Storage link in the web root points elsewhere',
+    'Git directory is writable by the web user' => 'Git directory is writable by the web user',
 ];

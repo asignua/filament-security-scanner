@@ -40,4 +40,5 @@ return [
     'Git config makes git run a command' => 'Git yapılandırması git\'in bir komut çalıştırmasına neden olur',
     'Git HEAD moved since the last baseline' => 'Git HEAD son temel çizgiden beri değişti',
     'Storage link in the web root points elsewhere' => 'Web kökündeki storage bağlantısı başka yere işaret ediyor',
+    'Git directory is writable by the web user' => 'Git dizini web kullanıcısı tarafından yazılabilir',
 ];

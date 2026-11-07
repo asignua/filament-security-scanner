@@ -87,6 +87,16 @@ unchanged, so stored findings, quarantine copies and settings keep working. The 
 
 ### Added
 
+- **Git invocation hardened.** Config overrides travel through `GIT_CONFIG_COUNT/KEY_n/VALUE_n` (a filter name containing
+  `=` used to survive `-c`); `--no-lazy-fetch` (when git supports it), `--no-replace-objects`, `--ignore-submodules=all`
+  (gitlinks are reported once as a scan issue), `core.trustctime=true`, `core.checkStat=default`,
+  `diff.ignoreSubmodules=none`; every inherited `GIT_*` variable (environment, `$_ENV`, `$_SERVER`) is dropped. git-lfs
+  filters run with `GIT_LFS_SKIP_SMUDGE=1` and non-required (a read-only `.git` no longer makes git "unavailable") and are
+  emptied when `alias.lfs` or another trick is present. `alias.lfs`, `remote.*.uploadpack`, `remote.*.promisor` and
+  `extensions.partialClone` are reported by `code.git-executable-config`.
+- New rule `code.git-dir-writable` (medium): the PHP user can write to `.git`, so git results cannot be trusted. Not raised
+  when `app.env` is `local` or `testing`. README "Limits" explains the trust model.
+- New translation key (all 10 locales) for `code.git-dir-writable`.
 - New translation keys (all 10 locales) for `code.git-executable-config`, `code.git-head-moved` and
   `hygiene.foreign-storage-link`.
 - New rules `code.ignored-php-file` (PHP hidden from git by a nested `.gitignore`, directories in

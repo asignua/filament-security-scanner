@@ -277,4 +277,199 @@ class GitHardeningTest extends TestCase
         $this->scan();
         $this->assertSame('resolved', SecurityFinding::query()->where('rule_id', 'code.git-head-moved')->firstOrFail()->status->value);
     }
+
+    private function commit(string $message = 'c'): void
+    {
+        $this->git(['add', '-A']);
+        $this->git(['-c', 'user.email=t@example.test', '-c', 'user.name=t', 'commit', '-q', '-m', $message]);
+    }
+
+    public function test_a_filter_name_with_an_equals_sign_is_still_emptied(): void
+    {
+        $marker = $this->root.'/eq-filter-ran';
+        file_put_contents($this->root.'/.gitattributes', "*.dat filter=a=b\n");
+        file_put_contents($this->root.'/app/f.dat', 'one');
+        $this->commit('dat');
+        file_put_contents($this->root.'/app/f.dat', 'two');
+        touch($this->root.'/app/f.dat', time() + 10);
+        $this->git(['config', 'filter.a=b.clean', 'touch '.escapeshellarg($marker).' && cat']);
+
+        $git = new GitStatus($this->root);
+        $this->assertIsArray($git->entries());
+
+        $this->assertFileDoesNotExist($marker, 'a filter whose name contains = must be emptied too.');
+        $this->assertContains('filter.a=b.clean', $git->executableConfig());
+    }
+
+    public function test_inherited_git_environment_is_stripped(): void
+    {
+        $other = sys_get_temp_dir().'/ss-nogit-'.bin2hex(random_bytes(4));
+        File::ensureDirectoryExists($other);
+        putenv('GIT_DIR='.$other);
+        $_ENV['GIT_DIR'] = $other;
+        $_SERVER['GIT_WORK_TREE'] = $other;
+
+        try {
+            $git = new GitStatus($this->root);
+
+            $this->assertIsArray($git->entries(), 'GIT_* from the inherited environment must not steer git.');
+            $this->assertSame([], $git->issues());
+        } finally {
+            putenv('GIT_DIR');
+            unset($_ENV['GIT_DIR'], $_SERVER['GIT_WORK_TREE']);
+            File::deleteDirectory($other);
+        }
+    }
+
+    public function test_weakened_stat_settings_cannot_hide_a_same_size_change(): void
+    {
+        $file = $this->root.'/app/A.php';
+        $content = file_get_contents($file);
+        $this->assertNotFalse($content);
+        (new Process(['touch', '-d', '2020-01-01 00:00:00.000000000', $file]))->mustRun();
+        $this->git(['update-index', '--refresh']);
+        $this->git(['config', 'core.trustctime', 'false']);
+        $this->git(['config', 'core.checkStat', 'minimal']);
+
+        sleep(1); // ctime has a one-second resolution in git's index
+        file_put_contents($file, strrev($content));
+        (new Process(['touch', '-d', '2020-01-01 00:00:00.500000000', $file]))->mustRun();
+
+        $entries = (new GitStatus($this->root))->entries();
+
+        $this->assertIsArray($entries);
+        $this->assertContains('app/A.php', array_column($entries, 'path'));
+    }
+
+    public function test_alias_lfs_and_promisor_keys_are_flagged(): void
+    {
+        $this->git(['config', 'alias.lfs', '!id']);
+        $this->git(['config', 'remote.origin.promisor', 'true']);
+        $this->git(['config', 'remote.origin.uploadpack', 'sh -c id']);
+        $this->git(['config', 'extensions.partialClone', 'origin']);
+
+        $keys = (new GitStatus($this->root))->executableConfig();
+
+        $this->assertContains('alias.lfs', $keys);
+        $this->assertContains('remote.origin.promisor', $keys);
+        $this->assertContains('remote.origin.uploadpack', $keys);
+        $this->assertContains('extensions.partialclone', $keys);
+    }
+
+    public function test_gitlinks_are_reported_once(): void
+    {
+        $sha = trim($this->git(['rev-parse', 'HEAD']));
+        $this->git(['update-index', '--add', '--cacheinfo', '160000,'.$sha.',vendor-a']);
+        $this->git(['update-index', '--add', '--cacheinfo', '160000,'.$sha.',vendor-b']);
+
+        $git = new GitStatus($this->root);
+        $git->entries();
+        $git->entries();
+
+        $mentions = array_filter($git->issues(), static fn (string $i): bool => str_contains($i, 'gitlink'));
+        $this->assertCount(1, $mentions);
+    }
+
+    /**
+     * A fake `git-lfs` on PATH that records the environment it runs with.
+     */
+    private function fakeLfs(string $marker): string
+    {
+        $bin = $this->root.'/fake-bin';
+        File::ensureDirectoryExists($bin);
+        file_put_contents($bin.'/git-lfs', "#!/bin/sh\necho \"skip=\$GIT_LFS_SKIP_SMUDGE\" >> ".escapeshellarg($marker)."\ncat\n");
+        chmod($bin.'/git-lfs', 0755);
+
+        $path = (string) getenv('PATH');
+        putenv('PATH='.$bin.':'.$path);
+        $_SERVER['PATH'] = $_ENV['PATH'] = $bin.':'.$path;
+
+        return $path;
+    }
+
+    public function test_the_lfs_filter_stays_but_runs_with_smudge_skipped(): void
+    {
+        $marker = $this->root.'/lfs-ran';
+        $path = $this->fakeLfs($marker);
+
+        try {
+            file_put_contents($this->root.'/.gitattributes', "*.dat filter=lfs\n");
+            file_put_contents($this->root.'/app/f.dat', 'one');
+            $this->commit('dat');
+            $this->git(['config', 'filter.lfs.clean', 'git-lfs clean -- %f']);
+            $this->git(['config', 'filter.lfs.smudge', 'git-lfs smudge -- %f']);
+            file_put_contents($this->root.'/app/f.dat', 'two');
+            touch($this->root.'/app/f.dat', time() + 10);
+
+            $git = new GitStatus($this->root);
+            $this->assertIsArray($git->entries());
+
+            $this->assertFileExists($marker, 'a plain git-lfs filter is left intact.');
+            $this->assertStringContainsString('skip=1', (string) file_get_contents($marker));
+            $this->assertSame([], $git->executableConfig());
+        } finally {
+            putenv('PATH='.$path);
+            $_SERVER['PATH'] = $_ENV['PATH'] = $path;
+        }
+    }
+
+    public function test_the_lfs_filter_is_emptied_when_an_alias_or_another_trick_is_present(): void
+    {
+        $marker = $this->root.'/lfs-ran';
+        $path = $this->fakeLfs($marker);
+
+        try {
+            file_put_contents($this->root.'/.gitattributes', "*.dat filter=lfs\n");
+            file_put_contents($this->root.'/app/f.dat', 'one');
+            $this->commit('dat');
+            $this->git(['config', 'filter.lfs.clean', 'git-lfs clean -- %f']);
+            $this->git(['config', 'alias.lfs', '!touch '.escapeshellarg($marker.'-alias')]);
+            file_put_contents($this->root.'/app/f.dat', 'two');
+            touch($this->root.'/app/f.dat', time() + 10);
+
+            $git = new GitStatus($this->root);
+            $this->assertIsArray($git->entries());
+
+            $this->assertFileDoesNotExist($marker);
+            $this->assertFileDoesNotExist($marker.'-alias');
+            $this->assertContains('alias.lfs', $git->executableConfig());
+        } finally {
+            putenv('PATH='.$path);
+            $_SERVER['PATH'] = $_ENV['PATH'] = $path;
+        }
+    }
+
+    public function test_a_writable_git_directory_is_a_finding_in_production_only(): void
+    {
+        config(['app.env' => 'production']);
+        $this->scan();
+        $this->assertSame(['.git'], SecurityFinding::query()->where('rule_id', 'code.git-dir-writable')->pluck('path')->all());
+
+        SecurityFinding::query()->delete();
+        config(['app.env' => 'local']);
+        $this->scan();
+        $this->assertSame([], SecurityFinding::query()->where('rule_id', 'code.git-dir-writable')->pluck('path')->all());
+    }
+
+    public function test_a_git_directory_the_web_user_cannot_write_is_not_a_finding(): void
+    {
+        // PHP's is_writable() is always true for root, and seteuid() does not change that.
+        if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+            $this->markTestSkipped('Needs a non-root user (run with docker --user).');
+        }
+
+        $paths = [$this->root.'/.git/config', $this->root.'/.git/HEAD', $this->root.'/.git'];
+
+        foreach ($paths as $path) {
+            chmod($path, is_dir($path) ? 0555 : 0444);
+        }
+
+        try {
+            $this->assertFalse((new GitStatus($this->root))->gitDirWritable());
+        } finally {
+            foreach (array_reverse($paths) as $path) {
+                chmod($path, is_dir($path) ? 0755 : 0644);
+            }
+        }
+    }
 }

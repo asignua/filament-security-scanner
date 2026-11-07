@@ -41,6 +41,13 @@ final class GitStatus
     /** @var false|list<array{key: string, filter: string|null}>|null false = detection failed */
     private array|false|null $commandConfig = null;
 
+    /** @var list<string> names of the exact git-lfs filters (benign on their own) */
+    private array $lfsFilters = [];
+
+    private bool $gitlinksReported = false;
+
+    private static ?bool $lazyFetchOption = null;
+
     public function __construct(private readonly string $base) {}
 
     /**
@@ -64,6 +71,28 @@ final class GitStatus
         return is_string($out) && trim($out) === 'true';
     }
 
+    /**
+     * Whether the PHP user can write to `.git` (the directory, its config or HEAD).
+     * Whoever can write there can make git say anything, so the comparison with
+     * git is only as trustworthy as that directory.
+     */
+    public function gitDirWritable(): bool
+    {
+        $git = rtrim($this->base, '/').'/.git';
+
+        if (!is_dir($git)) {
+            return false;
+        }
+
+        foreach ([$git, $git.'/config', $git.'/HEAD'] as $path) {
+            if (file_exists($path) && is_writable($path)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function head(bool $full = false): ?string
     {
         $out = $this->run($full ? ['rev-parse', 'HEAD'] : ['rev-parse', '--short', 'HEAD']);
@@ -80,11 +109,15 @@ final class GitStatus
      */
     public function entries(): ?array
     {
-        $out = $this->run(['status', '--porcelain=v1', '-z', '--untracked-files=all']);
+        // Submodules are not compared (a submodule's own git would be a second,
+        // separately trusted repository); gitlinks are reported once instead.
+        $out = $this->run(['status', '--porcelain=v1', '-z', '--untracked-files=all', '--ignore-submodules=all']);
 
         if (!is_string($out)) {
             return null;
         }
+
+        $this->reportGitlinks();
 
         $entries = [];
 
@@ -103,6 +136,36 @@ final class GitStatus
         }
 
         return $entries;
+    }
+
+    private function reportGitlinks(): void
+    {
+        if ($this->gitlinksReported) {
+            return;
+        }
+
+        $this->gitlinksReported = true;
+        $out = $this->run(['ls-files', '-s', '-z']);
+
+        if (!is_string($out)) {
+            return;
+        }
+
+        $links = [];
+
+        foreach (explode("\0", $out) as $field) {
+            if (str_starts_with($field, '160000 ')) {
+                $links[] = PathNormalizer::relative(substr($field, (int) strpos($field, "\t") + 1));
+            }
+        }
+
+        if ($links !== []) {
+            $this->issues[] = sprintf(
+                '%d gitlink(s) (submodules) are not compared with git: %s',
+                count($links),
+                implode(', ', array_slice($links, 0, 5)),
+            );
+        }
     }
 
     private function isRealDirectory(string $relative): bool
@@ -287,6 +350,16 @@ final class GitStatus
             if (preg_match('~^filter\.(.+)\.(?:clean|smudge|process)$~i', $key, $m) === 1) {
                 $filter = $m[1];
                 $benign = preg_match('~^git[- ]lfs (?:clean -- %f|smudge(?: --skip)? -- %f|filter-process(?: --skip)?)$~', $value) === 1;
+
+                if ($benign) {
+                    $this->lfsFilters[] = $filter;
+                }
+            } elseif (preg_match('~^alias\.lfs$|^remote\..+\.uploadpack$|^extensions\.partialclone$~i', $key) === 1) {
+                // `git lfs ...` in a filter runs the ALIAS if one is set; uploadpack and
+                // partial clones make git run a command / fetch on demand.
+                $benign = $value === '';
+            } elseif (preg_match('~^remote\..+\.promisor$~i', $key) === 1) {
+                $benign = preg_match('~^(?:false|no|off|0)?$~i', $value) === 1;
             } elseif (preg_match('~^(?:core\.(?:fsmonitor|sshcommand|hookspath|editor|pager)|diff\..+\.(?:textconv|command)|merge\..+\.driver)$~i', $key) === 1) {
                 $benign = preg_match('~^(?:false|true)$~i', $value) === 1;
             } else {
@@ -361,7 +434,16 @@ final class GitStatus
      */
     private function run(array $arguments, bool $neutralise = true): ?string
     {
-        $overrides = [];
+        // Overrides go through the environment (GIT_CONFIG_COUNT/KEY_n/VALUE_n), not
+        // `-c key=value`: `-c` splits at the first `=`, so a filter NAME containing
+        // `=` left its command untouched.
+        $overrides = [
+            // The owner of .git in production has a different uid than the container user.
+            'safe.directory' => $this->base,
+            // WITHOUT this the uid difference gives a "mode change" on EVERY tracked
+            // file, and the very first run alarms on the entire repository.
+            'core.fileMode' => 'false',
+        ];
 
         if ($neutralise) {
             // Filters are detected FIRST. `git status` runs a clean filter to compare
@@ -373,43 +455,72 @@ final class GitStatus
                 return null;
             }
 
+            // THINGS GIT MAY EXECUTE ON `status`, switched off: `core.fsmonitor` names a
+            // COMMAND, `core.hooksPath` redirects hooks. The stat settings are forced to
+            // their strict defaults so that a weakened `.git/config` cannot make a
+            // same-size change look clean. Not passed to the config READ: our own
+            // values would show up in `git config --list` as the repository's.
+            $overrides += [
+                'core.fsmonitor' => 'false',
+                'core.hooksPath' => '/dev/null',
+                'core.trustctime' => 'true',
+                'core.checkStat' => 'default',
+                'diff.ignoreSubmodules' => 'none',
+            ];
+
             // Every flagged filter is emptied (an empty command means "no filter") and
             // made non-required, so git neither runs it nor refuses to continue.
-            // Exact git-lfs filters are not flagged and stay intact: emptied, they
-            // would make every LFS file look modified.
-            foreach (array_unique(array_filter(array_column($config, 'filter'))) as $name) {
-                foreach (['clean', 'smudge', 'process'] as $variable) {
-                    array_push($overrides, '-c', 'filter.'.$name.'.'.$variable.'=');
-                }
+            // Exact git-lfs filters stay intact (emptied, they would make every LFS file
+            // look modified) unless something else suspicious is present: then
+            // `git lfs` itself may be an alias, and they are emptied too.
+            $names = array_column($config, 'filter');
 
-                array_push($overrides, '-c', 'filter.'.$name.'.required=false');
+            if ($config !== []) {
+                $names = array_merge($names, $this->lfsFilters);
+            }
+
+            foreach (array_unique(array_filter($names)) as $name) {
+                foreach (['clean', 'smudge', 'process'] as $variable) {
+                    $overrides['filter.'.$name.'.'.$variable] = '';
+                }
+            }
+
+            // Not required: a failing lfs filter (read-only .git) must not fail the status.
+            foreach (array_unique(array_merge(array_filter(array_column($config, 'filter')), $this->lfsFilters)) as $name) {
+                $overrides['filter.'.$name.'.required'] = 'false';
             }
         }
 
-        $command = array_merge([
-            'git',
-            '--no-optional-locks',
-            // The owner of .git in production has a different uid than the container user.
-            '-c', 'safe.directory='.$this->base,
-            // WITHOUT this the uid difference gives a "mode change" on EVERY tracked
-            // file, and the very first run alarms on the entire repository.
-            '-c', 'core.fileMode=false',
-            // THINGS GIT MAY EXECUTE ON `status`, switched off: `core.fsmonitor` names a
-            // COMMAND that git runs to ask what changed (anyone who can write
-            // .git/config gets code execution as the web user on the nightly scan),
-            // and `core.hooksPath` redirects hooks to a directory of the attacker's
-            // choice. Clean/smudge FILTER drivers (`filter.<name>.clean`) cannot be
-            // blanket-disabled (git-lfs needs them), so {@see executableConfig()}
-            // reports unexpected ones instead.
-            // Not passed to the config READ: our own `-c` would show up in
-            // `git config --list` and be reported as the repository's.
-            ...($neutralise ? ['-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null'] : []),
-            ...$overrides,
-            '-C', $this->base,
-        ], $arguments);
+        $environment = [];
+
+        foreach (array_merge(array_keys(getenv()), array_keys($_ENV), array_keys($_SERVER)) as $name) {
+            if (is_string($name) && str_starts_with(strtoupper($name), 'GIT_')) {
+                $environment[$name] = false;
+            }
+        }
+
+        $index = 0;
+        $environment['GIT_CONFIG_COUNT'] = (string) count($overrides);
+
+        foreach ($overrides as $key => $value) {
+            $environment['GIT_CONFIG_KEY_'.$index] = $key;
+            $environment['GIT_CONFIG_VALUE_'.$index] = $value;
+            $index++;
+        }
+
+        // An LFS filter that survives must not try to download anything.
+        $environment['GIT_LFS_SKIP_SMUDGE'] = '1';
+        $environment['GIT_TERMINAL_PROMPT'] = '0';
+
+        $command = array_merge(
+            ['git', '--no-optional-locks', '--no-replace-objects'],
+            self::supportsNoLazyFetch() ? ['--no-lazy-fetch'] : [],
+            ['-C', $this->base],
+            $arguments,
+        );
 
         try {
-            $process = new Process($command);
+            $process = new Process($command, null, $environment);
             $process->setTimeout((float) config('security-scanner.git_timeout', 60));
             $process->run();
 
@@ -425,5 +536,25 @@ final class GitStatus
 
             return null;
         }
+    }
+
+    /**
+     * `--no-lazy-fetch` appeared in git 2.43; an older git refuses the whole command.
+     */
+    private static function supportsNoLazyFetch(): bool
+    {
+        if (self::$lazyFetchOption === null) {
+            $probe = new Process(['git', '--no-lazy-fetch', '--version']);
+            $probe->setTimeout(10);
+
+            try {
+                $probe->run();
+                self::$lazyFetchOption = $probe->isSuccessful();
+            } catch (Throwable) {
+                self::$lazyFetchOption = false;
+            }
+        }
+
+        return self::$lazyFetchOption;
     }
 }

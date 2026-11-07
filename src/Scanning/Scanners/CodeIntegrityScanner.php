@@ -221,11 +221,27 @@ final class CodeIntegrityScanner implements Scanner
             yield $this->make($context, 'code.git-index-flag', $entry['path'], ['flag' => $entry['flag']]);
         }
 
+        if ($this->shouldReportWritableGitDir($git)) {
+            yield $this->make($context, 'code.git-dir-writable', '.git', [
+                'reason' => 'the PHP user can write to .git; git results cannot be trusted then',
+            ]);
+        }
+
         foreach ($git->executableConfig() as $key) {
             $this->issues[] = sprintf('git config "%s" makes git run a command; review .git/config', $key);
 
             yield $this->make($context, 'code.git-executable-config', '.git/config#'.$key, ['key' => $key]);
         }
+    }
+
+    /**
+     * `.git` writable by the PHP user is expected on a developer machine, so the finding
+     * is raised only outside `local`/`testing` (the same `app.env` the debug check reads).
+     */
+    private function shouldReportWritableGitDir(GitStatus $git): bool
+    {
+        return !in_array((string) config('app.env', 'production'), ['local', 'testing'], true)
+            && $git->gitDirWritable();
     }
 
     /**

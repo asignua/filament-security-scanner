@@ -210,6 +210,17 @@ return [
             'matcher' => ['type' => 'none'],
         ],
         [
+            // Whoever can write .git can make git report anything, so a clean
+            // `git status` proves nothing. Not raised in local/testing environments.
+            'id' => 'code.git-dir-writable',
+            'scanner' => 'code',
+            'severity' => SecuritySeverity::Medium->value,
+            'applies_to' => $codeZones,
+            'weight' => 5,
+            'message' => 'security-scanner::rules.Git directory is writable by the web user',
+            'matcher' => ['type' => 'none'],
+        ],
+        [
             'id' => 'code.deleted-file',
             'scanner' => 'code',
             'severity' => SecuritySeverity::Medium->value,

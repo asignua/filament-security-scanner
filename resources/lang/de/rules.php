@@ -40,4 +40,5 @@ return [
     'Git config makes git run a command' => 'Git-Konfiguration lässt git einen Befehl ausführen',
     'Git HEAD moved since the last baseline' => 'Git HEAD hat sich seit der letzten Baseline verschoben',
     'Storage link in the web root points elsewhere' => 'Storage-Link im Webroot zeigt auf ein anderes Ziel',
+    'Git directory is writable by the web user' => 'Das Git-Verzeichnis ist für den Webnutzer beschreibbar',
 ];
