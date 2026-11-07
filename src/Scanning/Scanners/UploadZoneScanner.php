@@ -119,7 +119,19 @@ final class UploadZoneScanner implements Scanner
             $context->filesSeen?->add($relative);
 
             $isSymlink = $file->isLink();
-            $size = $isSymlink ? 0 : (int) @$file->getSize();
+            $size = 0;
+            $mtime = null;
+
+            if (!$isSymlink) {
+                // getSize()/getMTime() THROW on a failed stat (`@` does not help): a
+                // directory with mode 0444 lists its entries but does not stat them.
+                try {
+                    $size = (int) $file->getSize();
+                    $mtime = (int) $file->getMTime();
+                } catch (Throwable) {
+                    $context->issues?->addUnreadableFile($this->id(), $relative, 'cannot be stat-ed');
+                }
+            }
 
             $subject = MatchSubject::make(
                 path: $absolute,
@@ -171,7 +183,7 @@ final class UploadZoneScanner implements Scanner
                     disk: $zone->disk,
                     deterministic: $rule->deterministic,
                     size: $size,
-                    mtime: $isSymlink ? null : (int) @$file->getMTime(),
+                    mtime: $mtime,
                     // The hash is set only when the rule really looked at content;
                     // this is what decides whether it goes into the fingerprint.
                     contentHash: $rule->matcher->needsContent() ? $contentHash : null,

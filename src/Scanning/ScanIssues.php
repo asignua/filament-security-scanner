@@ -67,6 +67,20 @@ final class ScanIssues
     }
 
     /**
+     * A single entry the scanner could not stat or open (a `0444` directory lists
+     * but does not stat; a `0000` file does not open): the scanner did NOT see it,
+     * so it is incomplete and must not close findings, but the run goes on.
+     */
+    public function addUnreadableFile(string $scanner, string $relative, string $reason = 'cannot be read'): void
+    {
+        $message = sprintf('file "%s" %s, it was NOT fully scanned', $relative, $reason);
+
+        $this->markIncomplete($scanner);
+        $this->add($scanner, $message);
+        $this->unreadable[] = $scanner.': '.$message;
+    }
+
+    /**
      * Messages about unreadable directories, for the run row (scanners add them to
      * the context only, so without this they would never reach the run's issue list).
      *

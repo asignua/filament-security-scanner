@@ -15,6 +15,7 @@ use Asignua\FilamentSecurityScanner\Scanning\ScanContext;
 use Asignua\FilamentSecurityScanner\Scanning\UnreadableDirectories;
 use Asignua\FilamentSecurityScanner\Scanning\Zone;
 use Generator;
+use Throwable;
 
 /**
  * Environment hygiene: the posture of the runtime, not file content.
@@ -185,13 +186,20 @@ final class EnvironmentHygieneScanner implements Scanner
                 continue;
             }
 
-            $perms = @$file->getPerms();
+            $relative = PathNormalizer::relative($file->getPathname(), $context->base);
+
+            // getPerms() THROWS on a failed stat (`@` does not help).
+            try {
+                $perms = $file->getPerms();
+            } catch (Throwable) {
+                $context->issues?->addUnreadableFile($this->id(), $relative, 'cannot be stat-ed');
+
+                continue;
+            }
 
             if ($perms === false || ($perms & 0002) === 0) {
                 continue;
             }
-
-            $relative = PathNormalizer::relative($file->getPathname(), $context->base);
 
             if ($context->isAllowlisted($relative)) {
                 continue;

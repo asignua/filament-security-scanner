@@ -85,7 +85,18 @@ final class ObfuscationScanner implements Scanner
                 $relative = PathNormalizer::relative($file->getPathname(), $context->base);
                 $visited[$relative] = true;
 
-                yield from $this->inspect($context, $relative, $file->getPathname(), $zone, (int) @$file->getMTime(), (int) @$file->getSize(), (int) @$file->getCTime());
+                // getMTime()/getSize() THROW on a failed stat (`@` does not help).
+                try {
+                    $mtime = (int) $file->getMTime();
+                    $size = (int) $file->getSize();
+                    $ctime = (int) $file->getCTime();
+                } catch (Throwable) {
+                    $context->issues?->addUnreadableFile($this->id(), $relative, 'cannot be stat-ed');
+
+                    continue;
+                }
+
+                yield from $this->inspect($context, $relative, $file->getPathname(), $zone, $mtime, $size, $ctime);
             }
         }
 
@@ -176,6 +187,10 @@ final class ObfuscationScanner implements Scanner
         $bytes = $this->read($absolute, $budget, $relative);
 
         if ($bytes === null) {
+            // Unreadable != clean: the scanner did not see the content, so it must
+            // not close its findings (see ScanRunner).
+            $context->issues?->markIncomplete($this->id());
+
             return;
         }
 

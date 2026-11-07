@@ -233,13 +233,19 @@ final class ScanRunner
         // closing: its silence means "not checked", not "gone". And the next
         // run's mtime gate must not treat such a pass as complete, so only the
         // complete ones stay in `ran`.
-        $incomplete = $context->issues?->incomplete() ?? [];
-        $complete = array_values(array_diff($ran, $incomplete));
+        $complete = array_values(array_diff($ran, $context->issues?->incomplete() ?? []));
 
         if ($status->closesFindings()) {
-            $seen = $this->reverifyUnseen($seen, $scan, $rules, $context->base, $complete);
+            // Re-verification can discover an unreadable file (and mark its scanner
+            // incomplete), so the `complete` set is recomputed after it.
+            $seen = $this->reverifyUnseen($seen, $scan, $rules, $context->base, $complete, $context->issues);
+            $incomplete = $context->issues?->incomplete() ?? [];
+            $complete = array_values(array_diff($ran, $incomplete));
             $resolved = $this->closeUnseen(array_keys($seen), $scan, $complete);
         }
+
+        $incomplete = $context->issues?->incomplete() ?? [];
+        $issues = array_values(array_unique(array_merge($issues, $context->issues?->unreadable() ?? [])));
 
         $scan->status = $status;
         $scan->scanners = [
@@ -389,7 +395,7 @@ final class ScanRunner
      *
      * @return array<string, true>
      */
-    private function reverifyUnseen(array $seen, SecurityScan $scan, RuleSet $rules, string $base, array $ran): array
+    private function reverifyUnseen(array $seen, SecurityScan $scan, RuleSet $rules, string $base, array $ran, ?ScanIssues $issues = null): array
     {
         if ($ran === []) {
             return $seen;
@@ -456,6 +462,12 @@ final class ScanRunner
             $handle = @fopen($absolute, 'rb');
 
             if ($handle === false) {
+                // The file EXISTS but cannot be opened (`chmod 000`): "cannot
+                // verify" != "gone". Keep the finding alive and mark the scanner
+                // incomplete instead of letting closeUnseen() resolve it.
+                $seen[$finding->fingerprint] = true;
+                $issues?->addUnreadableFile($finding->scanner, (string) $finding->path);
+
                 continue;
             }
 
