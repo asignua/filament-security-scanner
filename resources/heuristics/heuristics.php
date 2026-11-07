@@ -199,6 +199,17 @@ return [
             'matcher' => ['type' => 'none'],
         ],
         [
+            // A commit makes `git status` clean. HEAD differs from the one recorded
+            // with the last baseline: commits happened without a new baseline.
+            'id' => 'code.git-head-moved',
+            'scanner' => 'code',
+            'severity' => SecuritySeverity::Medium->value,
+            'applies_to' => $codeZones,
+            'weight' => 5,
+            'message' => 'security-scanner::rules.Git HEAD moved since the last baseline',
+            'matcher' => ['type' => 'none'],
+        ],
+        [
             'id' => 'code.deleted-file',
             'scanner' => 'code',
             'severity' => SecuritySeverity::Medium->value,

@@ -69,6 +69,15 @@ final class BaselineSnapshot
                 continue;
             }
 
+            // getSize()/getMTime() THROW on a failed stat (`@` does not help).
+            try {
+                $size = (int) $file->getSize();
+                $mtime = (int) $file->getMTime();
+            } catch (Throwable) {
+                $size = 0;
+                $mtime = 0;
+            }
+
             $batch[] = [
                 'snapshot_id' => $snapshotId,
                 'zone' => $zone->name,
@@ -76,8 +85,8 @@ final class BaselineSnapshot
                 'path_hash' => hash('sha256', $relative),
                 'content_hash' => $hash,
                 'hash_algo' => $algo,
-                'size' => (int) @$file->getSize(),
-                'mtime' => (int) @$file->getMTime(),
+                'size' => $size,
+                'mtime' => $mtime,
                 'mode' => null,
                 'complete' => false,
                 'taken_at' => $takenAt,
@@ -98,6 +107,48 @@ final class BaselineSnapshot
             ->update(['complete' => true]);
 
         return $snapshotId;
+    }
+
+    /** Pseudo-zone that holds the git HEAD recorded with the baseline. */
+    public const string HEAD_ZONE = '@git';
+
+    /**
+     * Records the git HEAD as of the deploy. A commit moves HEAD and makes `git
+     * status` clean again, so without this a commit would hide every change.
+     */
+    public static function takeHead(string $head): string
+    {
+        $snapshotId = (string) Str::ulid();
+
+        SecurityBaselineEntry::query()->insert([
+            'snapshot_id' => $snapshotId,
+            'zone' => self::HEAD_ZONE,
+            'path' => 'HEAD',
+            'path_hash' => hash('sha256', 'HEAD'),
+            'content_hash' => $head,
+            'hash_algo' => 'git',
+            'size' => 0,
+            'mtime' => 0,
+            'mode' => null,
+            'complete' => true,
+            'taken_at' => now(),
+        ]);
+
+        return $snapshotId;
+    }
+
+    /**
+     * The HEAD recorded by the latest baseline, `null` when none was ever recorded.
+     */
+    public static function recordedHead(): ?string
+    {
+        $head = SecurityBaselineEntry::query()
+            ->where('zone', self::HEAD_ZONE)
+            ->where('complete', true)
+            ->orderByDesc('id')
+            ->value('content_hash');
+
+        return is_string($head) && $head !== '' ? rtrim($head) : null;
     }
 
     /**

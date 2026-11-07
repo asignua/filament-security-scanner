@@ -133,9 +133,42 @@ final class CodeIntegrityScanner implements Scanner
             ], static fn (mixed $v): bool => $v !== null && $v !== ''));
         }
 
+        yield from $this->headMoved($git, $context);
         yield from $this->hiddenFromGit($git, $context);
 
         $this->issues = array_merge($this->issues, $git->issues());
+    }
+
+    /**
+     * A commit makes `git status` clean, so a HEAD that differs from the one
+     * recorded with the baseline is a finding of its own. It stays open until
+     * `security:baseline` is run again, which is why the deploy must run it.
+     *
+     * @return Generator<Finding>
+     */
+    private function headMoved(GitStatus $git, ScanContext $context): Generator
+    {
+        $recorded = BaselineSnapshot::recordedHead();
+
+        if ($recorded === null) {
+            return;
+        }
+
+        $current = $git->head(full: true);
+
+        if ($current === null) {
+            $context->issues?->markIncomplete($this->id());
+
+            return;
+        }
+
+        if ($current !== $recorded) {
+            yield $this->make($context, 'code.git-head-moved', 'HEAD', [
+                'recorded' => substr($recorded, 0, 12),
+                'current' => substr($current, 0, 12),
+                'hint' => 'run security:baseline as part of the deploy',
+            ]);
+        }
     }
 
     /**
@@ -214,7 +247,13 @@ final class CodeIntegrityScanner implements Scanner
         }
 
         return match (true) {
-            str_contains($flags, 'R') => 'code.renamed-file',
+            str_contains($flags, 'R'), str_contains($flags, 'C') => 'code.renamed-file',
+            // Staged addition: not in HEAD yet, so it is as foreign as an untracked file.
+            str_contains($flags, 'A') => array_intersect(PathNormalizer::extensionChain($path), self::EXECUTABLE_EXTENSIONS) !== []
+                ? 'code.untracked-executable'
+                : 'code.untracked-file',
+            // Unmerged paths (UU, AA, DU…).
+            str_contains($flags, 'U') => 'code.modified-file',
             str_contains($flags, 'D') => 'code.deleted-file',
             str_contains($flags, 'M'), str_contains($flags, 'T') => 'code.modified-file',
             default => null,

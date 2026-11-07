@@ -64,9 +64,9 @@ final class GitStatus
         return is_string($out) && trim($out) === 'true';
     }
 
-    public function head(): ?string
+    public function head(bool $full = false): ?string
     {
-        $out = $this->run(['rev-parse', '--short', 'HEAD']);
+        $out = $this->run($full ? ['rev-parse', 'HEAD'] : ['rev-parse', '--short', 'HEAD']);
 
         return is_string($out) ? trim($out) : null;
     }

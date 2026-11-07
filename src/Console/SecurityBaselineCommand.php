@@ -6,6 +6,7 @@ namespace Asignua\FilamentSecurityScanner\Console;
 
 use Asignua\FilamentSecurityScanner\Enums\SecurityZoneKind;
 use Asignua\FilamentSecurityScanner\Scanning\BaselineSnapshot;
+use Asignua\FilamentSecurityScanner\Scanning\GitStatus;
 use Asignua\FilamentSecurityScanner\Scanning\Zone;
 use Asignua\FilamentSecurityScanner\Scanning\Zones;
 use Illuminate\Console\Command;
@@ -48,6 +49,20 @@ class SecurityBaselineCommand extends Command
 
         foreach ($issues as $issue) {
             $this->components->warn($issue);
+        }
+
+        // The git HEAD of this deploy goes with the snapshot: the scanner flags a HEAD
+        // that moved WITHOUT a new baseline (a commit makes `git status` clean).
+        $git = new GitStatus(Zones::base());
+
+        if ($git->available()) {
+            $head = $git->head(full: true);
+
+            if ($head !== null && $head !== '') {
+                BaselineSnapshot::takeHead($head);
+                BaselineSnapshot::prune(BaselineSnapshot::HEAD_ZONE, max(1, (int) $this->option('keep')));
+                $this->components->info('Git HEAD recorded: '.substr($head, 0, 12));
+            }
         }
 
         /** @var list<string> $wanted */

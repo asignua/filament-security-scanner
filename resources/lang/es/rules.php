@@ -38,4 +38,5 @@ return [
     'PHP file hidden from git by .gitignore' => 'Archivo PHP oculto a git por .gitignore',
     'Tracked file hidden from git status' => 'Archivo rastreado oculto a git status',
     'Git config makes git run a command' => 'La configuración de git hace que git ejecute un comando',
+    'Git HEAD moved since the last baseline' => 'Git HEAD se movió desde la última línea base',
 ];

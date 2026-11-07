@@ -240,4 +240,41 @@ class GitHardeningTest extends TestCase
             SecurityFinding::query()->where('rule_id', 'code.ignored-php-file')->pluck('path')->all(),
         );
     }
+
+    public function test_a_staged_added_php_file_is_reported(): void
+    {
+        file_put_contents($this->root.'/app/Staged.php', '<?php echo "neutralized";');
+        $this->git(['add', 'app/Staged.php']);
+
+        $this->scan();
+
+        $this->assertContains(
+            'app/Staged.php',
+            SecurityFinding::query()->where('rule_id', 'code.untracked-executable')->pluck('path')->all(),
+        );
+    }
+
+    public function test_a_commit_after_the_baseline_is_reported_until_the_baseline_is_retaken(): void
+    {
+        File::ensureDirectoryExists($this->root.'/vendor');
+        file_put_contents($this->root.'/vendor/v.txt', 'x');
+        config(['security-scanner.zones' => array_merge((array) config('security-scanner.zones'), [
+            'vendor' => ['root' => 'vendor', 'kind' => 'vendor'],
+        ])]);
+
+        Artisan::call('security:baseline', ['--zone' => ['vendor']]);
+        $this->scan();
+        $this->assertSame([], SecurityFinding::query()->where('rule_id', 'code.git-head-moved')->pluck('path')->all());
+
+        file_put_contents($this->root.'/app/Hidden.php', '<?php echo "neutralized";');
+        $this->git(['add', '-A']);
+        $this->git(['-c', 'user.email=t@example.test', '-c', 'user.name=t', 'commit', '-q', '-m', 'hide']);
+
+        $this->scan();
+        $this->assertSame(['HEAD'], SecurityFinding::query()->where('rule_id', 'code.git-head-moved')->pluck('path')->all());
+
+        Artisan::call('security:baseline', ['--zone' => ['vendor']]);
+        $this->scan();
+        $this->assertSame('resolved', SecurityFinding::query()->where('rule_id', 'code.git-head-moved')->firstOrFail()->status->value);
+    }
 }
