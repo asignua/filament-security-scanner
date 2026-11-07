@@ -16,6 +16,9 @@ namespace Asignua\FilamentSecurityScanner\Scanning;
  */
 final class PathNormalizer
 {
+    /** Names that make a dotfile executable: `.php` is a PHP file, not a hidden file without extension. */
+    private const array EXECUTABLE_NAMES = ['php', 'php3', 'php4', 'php5', 'php6', 'php7', 'php8', 'phtml', 'pht', 'phar'];
+
     /** Length of the `path`/`quarantine_path` columns in `security_findings`. */
     public const int MAX_STORED_LENGTH = 400;
 
@@ -157,24 +160,33 @@ final class PathNormalizer
     public static function extensionChain(string $path): array
     {
         $name = basename(self::relative($path));
+        $dotted = str_starts_with($name, '.');
         $name = ltrim($name, '.');
 
+        // A file literally named `.php` (or `.php.jpg`) is executed by an
+        // `\.php$` handler like any other: its "name" IS the extension.
+        $leading = $dotted && in_array(strtolower(explode('.', $name)[0]), self::EXECUTABLE_NAMES, true)
+            ? [strtolower(explode('.', $name)[0])]
+            : [];
+
         if ($name === '' || !str_contains($name, '.')) {
-            return [];
+            return $leading;
         }
 
         $parts = explode('.', $name);
-        array_shift($parts);                       // the file name itself, not an extension
+        array_shift($parts);              // the file name itself, not an extension
 
         $parts = array_map(
             static fn (string $p): string => strtolower(trim($p)),
             $parts,
         );
 
-        return array_values(array_reverse(array_filter(
+        $chain = array_values(array_reverse(array_filter(
             $parts,
             static fn (string $p): bool => $p !== '',
         )));
+
+        return $dotted && $leading !== [] ? array_merge($chain, $leading) : $chain;
     }
 
     /**

@@ -66,6 +66,8 @@ final class SecurityPathNormalizerTest extends PureTestCase
     public function test_a_hidden_file_keeps_its_real_extension(): void
     {
         $this->assertSame(['php'], PathNormalizer::extensionChain('.shell.php'));
+        $this->assertSame(['php'], PathNormalizer::extensionChain('uploads/.php'));
+        $this->assertSame(['jpg', 'php'], PathNormalizer::extensionChain('.PHP.jpg'));
         $this->assertSame(['ini'], PathNormalizer::extensionChain('storage/.user.ini'));
     }
 
