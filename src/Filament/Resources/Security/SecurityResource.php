@@ -171,8 +171,10 @@ class SecurityResource extends Resource
                 ->visible(fn (SecurityFinding $record): bool => is_array($record->evidence) && $record->evidence !== [])
                 ->schema([
                     TextEntry::make('evidence')
+                        ->label(__('security-scanner::ui.Evidence'))
                         ->hiddenLabel()
                         ->columnSpanFull()
+                        ->listWithLineBreaks()
                         ->formatStateUsing(fn (mixed $state): string => self::formatEvidence($state)),
                 ]),
 
@@ -205,25 +207,22 @@ class SecurityResource extends Resource
         return is_scalar($state) ? (string) $state : null;
     }
 
+    /**
+     * Filament calls the formatter once per ITEM of an array state, so $state is one
+     * evidence entry, not the list.
+     */
     private static function formatEvidence(mixed $state): string
     {
         if (!is_array($state)) {
             return '—';
         }
 
-        $lines = [];
+        $rule = is_string($state['ruleId'] ?? null) ? $state['ruleId'] : '';
+        $excerpt = is_string($state['excerpt'] ?? null) ? $state['excerpt'] : '';
+        $offset = is_int($state['offset'] ?? null) ? ' @'.$state['offset'] : '';
 
-        foreach ($state as $item) {
-            if (!is_array($item)) {
-                continue;
-            }
+        $line = trim($rule.$offset.': '.$excerpt);
 
-            $excerpt = is_string($item['excerpt'] ?? null) ? $item['excerpt'] : '';
-            $offset = is_int($item['offset'] ?? null) ? ' @'.$item['offset'] : '';
-
-            $lines[] = trim(($item['ruleId'] ?? '').$offset.': '.$excerpt);
-        }
-
-        return $lines === [] ? '—' : implode("\n", $lines);
+        return $line === ':' ? '—' : $line;
     }
 }
