@@ -79,4 +79,6 @@ return [
     'Quarantine refused: the file name is not valid UTF-8. The finding stays open; handle the file by hand.' => 'Karantina reddedildi: dosya adı geçerli UTF-8 değil. Bulgu açık kalır; dosyayı elle işleyin.',
     'No findings yet' => 'Henüz bulgu yok',
     'Nothing is listed until a scan has run. Run php artisan security:scan to start the first one.' => 'Bir tarama çalıştırılana kadar hiçbir şey listelenmez. İlk taramayı başlatmak için php artisan security:scan komutunu çalıştırın.',
+    'Scans have run, nothing found' => 'Taramalar çalıştı, bulgu yok',
+    'The list is empty because the checks found nothing. Check the last-scan line under the page title to confirm it is recent.' => 'Kontroller bir şey bulmadığı için liste boş. Güncel olduğunu doğrulamak için sayfa başlığının altındaki son tarama satırına bakın.',
 ];

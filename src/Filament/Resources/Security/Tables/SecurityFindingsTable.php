@@ -7,6 +7,7 @@ namespace Asignua\FilamentSecurityScanner\Filament\Resources\Security\Tables;
 use Asignua\FilamentSecurityScanner\Enums\SecurityFindingStatus;
 use Asignua\FilamentSecurityScanner\Enums\SecurityZoneKind;
 use Asignua\FilamentSecurityScanner\Models\SecurityFinding;
+use Asignua\FilamentSecurityScanner\Models\SecurityScan;
 use Asignua\FilamentSecurityScanner\Scanning\Quarantine;
 use Asignua\FilamentSecurityScanner\SecurityPresenter;
 use Asignua\FilamentSecurityScanner\SecurityScanner;
@@ -25,11 +26,22 @@ use Illuminate\Support\Facades\Auth;
 
 class SecurityFindingsTable
 {
+    private static function scansHaveRun(): bool
+    {
+        return SecurityScan::query()->exists();
+    }
+
     public static function configure(Table $table): Table
     {
         return $table
-            ->emptyStateHeading(__('security-scanner::ui.No findings yet'))
-            ->emptyStateDescription(__('security-scanner::ui.Nothing is listed until a scan has run. Run php artisan security:scan to start the first one.'))
+            // "No scan yet" and "scans ran, nothing found" are different facts: the first
+            // is an instruction, the second a (checkable) all-clear.
+            ->emptyStateHeading(fn (): string => self::scansHaveRun()
+                ? __('security-scanner::ui.Scans have run, nothing found')
+                : __('security-scanner::ui.No findings yet'))
+            ->emptyStateDescription(fn (): string => self::scansHaveRun()
+                ? __('security-scanner::ui.The list is empty because the checks found nothing. Check the last-scan line under the page title to confirm it is recent.')
+                : __('security-scanner::ui.Nothing is listed until a scan has run. Run php artisan security:scan to start the first one.'))
             ->columns([
                 TextColumn::make('severity')
                     ->label(__('security-scanner::ui.Severity'))

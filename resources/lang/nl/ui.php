@@ -79,4 +79,6 @@ return [
     'Quarantine refused: the file name is not valid UTF-8. The finding stays open; handle the file by hand.' => 'Quarantaine geweigerd: de bestandsnaam is geen geldig UTF-8. De bevinding blijft open; behandel het bestand handmatig.',
     'No findings yet' => 'Nog geen bevindingen',
     'Nothing is listed until a scan has run. Run php artisan security:scan to start the first one.' => 'Er wordt niets getoond voordat een scan is uitgevoerd. Voer php artisan security:scan uit om de eerste te starten.',
+    'Scans have run, nothing found' => 'Scans zijn uitgevoerd, niets gevonden',
+    'The list is empty because the checks found nothing. Check the last-scan line under the page title to confirm it is recent.' => 'De lijst is leeg omdat de controles niets hebben gevonden. Controleer de regel met de laatste scan onder de paginatitel om te zien of die recent is.',
 ];
