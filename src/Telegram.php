@@ -73,10 +73,22 @@ final class Telegram
 
             return true;
         } catch (Throwable $e) {
-            logger()->warning('Telegram: '.$e->getMessage());
+            logger()->warning('Telegram: '.self::redact($e->getMessage()));
 
             return false;
         }
+    }
+
+    /**
+     * Guzzle puts the request URL, which carries `/bot<token>/`, into its exception
+     * messages. The token is a credential: it must not reach logs or error trackers.
+     */
+    public static function redact(string $message): string
+    {
+        $message = (string) preg_replace('~/bot[^/\s]+/~', '/bot<redacted>/', $message);
+        $token = self::token();
+
+        return $token === '' ? $message : str_replace($token, '<redacted>', $message);
     }
 
     /**
