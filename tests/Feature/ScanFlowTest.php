@@ -151,4 +151,29 @@ class ScanFlowTest extends TestCase
 
         Quarantine::restore($finding);
     }
+
+    public function test_a_restored_file_reopens_the_finding_as_new_and_alerts_again(): void
+    {
+        $this->scan();
+        $finding = $this->shellFinding();
+        $finding->notified_channels = ['database' => now()->toIso8601String()];
+        $finding->notified_at = now();
+        $finding->save();
+        Quarantine::move($finding, auto: false, byLabel: 'tester');
+        $this->assertNotNull($finding->refresh()->quarantined_at);
+
+        Quarantine::restore($finding, byLabel: 'tester');
+
+        $fresh = $finding->fresh();
+        $this->assertSame(SecurityFindingStatus::New, $fresh?->status);
+        $this->assertNull($fresh?->quarantined_at);
+        $this->assertNull($fresh?->quarantine_path);
+        $this->assertNull($fresh?->notified_channels);
+        $this->assertNull($fresh?->notified_at);
+
+        // The live shell is on disk again: a re-scan must keep the finding open and unnotified.
+        $this->scan();
+        $this->assertSame(SecurityFindingStatus::New, $finding->fresh()?->status);
+        $this->assertNull($finding->fresh()?->notified_at);
+    }
 }

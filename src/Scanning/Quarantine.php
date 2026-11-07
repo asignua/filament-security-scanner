@@ -264,14 +264,21 @@ final class Quarantine
             @chmod($target, (int) octdec($meta['mode']));
         }
 
-        // The restored file is an open finding again. A human restored it
-        // deliberately, but the scanner has the right to see it once more.
-        $finding->status = SecurityFindingStatus::Acknowledged;
+        // The restored file is a LIVE file again, possibly a live web shell: the
+        // finding is reopened as NEW with its notification stamps cleared, so every
+        // channel alerts once more. `Acknowledged` here used to keep the next scan
+        // silent. An admin who restored a false positive closes it with `Ignore`.
+        // `quarantined_at` goes too: nothing is in quarantine any more.
+        $finding->status = SecurityFindingStatus::New;
         $finding->status_changed_at = now();
         $finding->status_by_id = $byId;
         $finding->status_by_label = $byLabel;
         $finding->status_note = (string) __('security-scanner::ui.Restored from quarantine');
         $finding->quarantine_path = null;
+        $finding->quarantined_at = null;
+        $finding->quarantine_auto = false;
+        $finding->notified_channels = null;
+        $finding->notified_at = null;
         $finding->save();
     }
 
