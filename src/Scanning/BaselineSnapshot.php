@@ -143,11 +143,16 @@ final class BaselineSnapshot
     /**
      * @return Generator<SplFileInfo>
      */
-    public static function walk(Zone $zone): Generator
+    public static function walk(Zone $zone, ?ScanContext $context = null, string $scanner = 'code'): Generator
     {
+        $unreadable = new UnreadableDirectories;
+
         try {
-            $iterator = $zone->iterator();
-        } catch (Throwable) {
+            $iterator = $zone->iterator(unreadable: $unreadable);
+        } catch (Throwable $e) {
+            $context?->issues?->markIncomplete($scanner);
+            $context?->issues?->add($scanner, sprintf('zone "%s" cannot be walked: %s', $zone->name, $e->getMessage()));
+
             return;
         }
 
@@ -158,6 +163,10 @@ final class BaselineSnapshot
             }
 
             yield $file;
+        }
+
+        if ($context !== null) {
+            $context->issues?->addUnreadable($scanner, $zone->name, $unreadable, $context->base);
         }
     }
 }

@@ -129,16 +129,20 @@ final readonly class Zone
      * FOLLOW_SYMLINKS is never enabled: leaving the zone is something to be
      * flagged, not something to follow.
      *
+     * A directory that cannot be opened is skipped (CATCH_GET_CHILD) but RECORDED
+     * in `$unreadable`: a skipped directory is "not looked at", never "clean".
+     *
      * @param RecursiveIteratorIterator::CHILD_FIRST|RecursiveIteratorIterator::LEAVES_ONLY|RecursiveIteratorIterator::SELF_FIRST $mode
      *
      * @return RecursiveIteratorIterator<RecursiveCallbackFilterIterator<mixed, mixed, RecursiveDirectoryIterator>|RecursiveDirectoryIterator>
      */
-    public function iterator(int $mode = RecursiveIteratorIterator::LEAVES_ONLY): RecursiveIteratorIterator
+    public function iterator(int $mode = RecursiveIteratorIterator::LEAVES_ONLY, ?UnreadableDirectories $unreadable = null): RecursiveIteratorIterator
     {
-        $directory = new RecursiveDirectoryIterator(
+        $directory = new ZoneDirectoryIterator(
             $this->absolutePath,
             FilesystemIterator::SKIP_DOTS | FilesystemIterator::CURRENT_AS_FILEINFO,
         );
+        $directory->unreadable = $unreadable;
 
         $inner = $this->excludedRoots === []
             ? $directory

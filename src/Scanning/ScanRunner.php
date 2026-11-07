@@ -213,6 +213,8 @@ final class ScanRunner
             $context->issues?->addMany($scanner->id(), $scanner->issues());
         }
 
+        $issues = array_merge($issues, $context->issues?->unreadable() ?? []);
+
         $partial = $degraded || $context->outOfTime() || $restrictToPaths !== [];
 
         $status = match (true) {

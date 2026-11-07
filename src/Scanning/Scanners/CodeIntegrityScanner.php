@@ -192,7 +192,7 @@ final class CodeIntegrityScanner implements Scanner
             ->where('snapshot_id', $snapshot)
             ->value('hash_algo') ?? BaselineSnapshot::algo());
 
-        foreach (BaselineSnapshot::walk($zone) as $file) {
+        foreach (BaselineSnapshot::walk($zone, $context, $this->id()) as $file) {
             $relative = PathNormalizer::relative($file->getPathname(), $context->base);
 
             if ($context->isAllowlisted($relative)) {

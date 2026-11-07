@@ -9,6 +9,7 @@ use Asignua\FilamentSecurityScanner\Scanning\Finding;
 use Asignua\FilamentSecurityScanner\Scanning\MatchSubject;
 use Asignua\FilamentSecurityScanner\Scanning\PathNormalizer;
 use Asignua\FilamentSecurityScanner\Scanning\ScanContext;
+use Asignua\FilamentSecurityScanner\Scanning\UnreadableDirectories;
 use Asignua\FilamentSecurityScanner\Scanning\Zone;
 use Generator;
 use SplFileInfo;
@@ -248,7 +249,7 @@ final class UploadZoneScanner implements Scanner
     private function candidates(Zone $zone, ScanContext $context): Generator
     {
         if ($context->restrictToPaths === []) {
-            yield from $this->walk($zone);
+            yield from $this->walk($zone, $context);
 
             return;
         }
@@ -259,15 +260,18 @@ final class UploadZoneScanner implements Scanner
     /**
      * @return Generator<SplFileInfo>
      */
-    private function walk(Zone $zone): Generator
+    private function walk(Zone $zone, ScanContext $context): Generator
     {
+        $unreadable = new UnreadableDirectories;
+
         try {
             // Walk flags and cutting out nested zones are in Zone::iterator():
             // the structural scanner, the hash snapshot and hygiene must have ONE
             // view of what belongs to the zone.
-            $iterator = $zone->iterator();
+            $iterator = $zone->iterator(unreadable: $unreadable);
         } catch (Throwable $e) {
             $this->issues[] = sprintf('zone "%s" cannot be walked: %s', $zone->name, $e->getMessage());
+            $context->issues?->markIncomplete($this->id());
 
             return;
         }
@@ -292,5 +296,7 @@ final class UploadZoneScanner implements Scanner
 
             yield $file;
         }
+
+        $context->issues?->addUnreadable($this->id(), $zone->name, $unreadable, $context->base);
     }
 }

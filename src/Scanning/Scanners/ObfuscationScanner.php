@@ -127,7 +127,7 @@ final class ObfuscationScanner implements Scanner
     private function candidates(Zone $zone, ScanContext $context): Generator
     {
         if ($context->restrictToPaths === []) {
-            yield from BaselineSnapshot::walk($zone);
+            yield from BaselineSnapshot::walk($zone, $context, $this->id());
 
             return;
         }

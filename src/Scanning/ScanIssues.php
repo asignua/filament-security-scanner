@@ -22,6 +22,9 @@ final class ScanIssues
     /** @var array<string, true> */
     private array $incomplete = [];
 
+    /** @var list<string> */
+    private array $unreadable = [];
+
     /**
      * The scanner ran but did NOT SEE everything it should have (git did not answer).
      *
@@ -41,6 +44,37 @@ final class ScanIssues
     public function incomplete(): array
     {
         return array_keys($this->incomplete);
+    }
+
+    /**
+     * Directories the walk could not open: the scanner did NOT see their contents.
+     * Marks it incomplete (its findings are not closed) and records an issue, which
+     * hygiene turns into a `hygiene.scanner-degraded` finding.
+     */
+    public function addUnreadable(string $scanner, string $zone, UnreadableDirectories $directories, string $base): void
+    {
+        foreach ($directories->all() as $directory) {
+            $message = sprintf(
+                'zone "%s": directory "%s" cannot be read, its contents were NOT scanned',
+                $zone,
+                PathNormalizer::relative($directory, $base),
+            );
+
+            $this->markIncomplete($scanner);
+            $this->add($scanner, $message);
+            $this->unreadable[] = $scanner.': '.$message;
+        }
+    }
+
+    /**
+     * Messages about unreadable directories, for the run row (scanners add them to
+     * the context only, so without this they would never reach the run's issue list).
+     *
+     * @return list<string>
+     */
+    public function unreadable(): array
+    {
+        return array_values(array_unique($this->unreadable));
     }
 
     public function add(string $scanner, string $message): void

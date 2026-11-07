@@ -12,6 +12,7 @@ use Asignua\FilamentSecurityScanner\Scanning\Finding;
 use Asignua\FilamentSecurityScanner\Scanning\PathNormalizer;
 use Asignua\FilamentSecurityScanner\Scanning\Rule;
 use Asignua\FilamentSecurityScanner\Scanning\ScanContext;
+use Asignua\FilamentSecurityScanner\Scanning\UnreadableDirectories;
 use Asignua\FilamentSecurityScanner\Scanning\Zone;
 use Generator;
 
@@ -173,7 +174,8 @@ final class EnvironmentHygieneScanner implements Scanner
      */
     private function worldWritable(ScanContext $context, Zone $zone): Generator
     {
-        $iterator = $zone->iterator(\RecursiveIteratorIterator::SELF_FIRST);
+        $unreadable = new UnreadableDirectories;
+        $iterator = $zone->iterator(\RecursiveIteratorIterator::SELF_FIRST, $unreadable);
 
         $reported = 0;
 
@@ -205,6 +207,8 @@ final class EnvironmentHygieneScanner implements Scanner
                 return;
             }
         }
+
+        $context->issues?->addUnreadable($this->id(), $zone->name, $unreadable, $context->base);
     }
 
     /**
