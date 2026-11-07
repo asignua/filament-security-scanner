@@ -89,7 +89,7 @@ return [
         // Code directories searched for PHP files that .gitignore hides from
         // `git status` (a nested config/.gitignore listing a shell). Relative to the
         // project root; bootstrap/cache is always skipped. Empty = off.
-        'ignored_php_paths' => ['app', 'bootstrap', 'config', 'database', 'routes'],
+        'ignored_php_paths' => ['app', 'bootstrap', 'config', 'database', 'resources', 'routes'],
     ],
 
     // Host file that adds to / overrides the rules (see RuleRegistry).

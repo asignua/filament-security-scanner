@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Asignua\FilamentSecurityScanner\Scanning;
 
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Throwable;
@@ -28,6 +32,8 @@ final class GitStatus
 {
     /** Extensions the PHP engine executes. */
     private const array PHP_EXTENSIONS = ['php', 'php3', 'php4', 'php5', 'php6', 'php7', 'php8', 'phtml', 'pht', 'phar', 'inc'];
+
+    private const int EXPAND_LIMIT = 2000;
 
     /** @var list<string> */
     private array $issues = [];
@@ -76,7 +82,77 @@ final class GitStatus
     {
         $out = $this->run(['status', '--porcelain=v1', '-z', '--untracked-files=all']);
 
-        return is_string($out) ? self::parsePorcelainZ($out) : null;
+        if (!is_string($out)) {
+            return null;
+        }
+
+        $entries = [];
+
+        foreach (self::parsePorcelainZ($out) as $entry) {
+            $entries[] = $entry;
+
+            // `--untracked-files=all` still reports a NESTED REPOSITORY (or any directory
+            // git refuses to descend into) as ONE `dir/` entry, so a shell inside it
+            // would show up as a single low `untracked-file`. Expand it: every
+            // PHP-executable file becomes an entry of its own.
+            if ($entry['status'] === '??' && $this->isRealDirectory($entry['path'])) {
+                foreach ($this->expandDirectory($entry['path']) as $file) {
+                    $entries[] = ['status' => '??', 'path' => $file, 'from' => null];
+                }
+            }
+        }
+
+        return $entries;
+    }
+
+    private function isRealDirectory(string $relative): bool
+    {
+        $absolute = rtrim($this->base, '/').'/'.$relative;
+
+        return !is_link($absolute) && is_dir($absolute);
+    }
+
+    /**
+     * PHP-executable files under a directory git reports as a single entry.
+     * Symlinks are not followed; an unreadable subdirectory is recorded as an issue.
+     *
+     * @return list<string> paths relative to the root
+     */
+    private function expandDirectory(string $relative): array
+    {
+        $absolute = rtrim($this->base, '/').'/'.$relative;
+        $files = [];
+
+        try {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($absolute, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::LEAVES_ONLY,
+                RecursiveIteratorIterator::CATCH_GET_CHILD,
+            );
+
+            foreach ($iterator as $file) {
+                /** @var SplFileInfo $file */
+                if ($file->isLink() || !$file->isFile()) {
+                    continue;
+                }
+
+                $path = PathNormalizer::relative($file->getPathname(), $this->base);
+
+                if (array_intersect(PathNormalizer::extensionChain($path), self::PHP_EXTENSIONS) !== []) {
+                    $files[] = $path;
+                }
+
+                if (count($files) >= self::EXPAND_LIMIT) {
+                    $this->issues[] = sprintf('directory "%s": more than %d PHP files, the rest not listed', $relative, self::EXPAND_LIMIT);
+
+                    break;
+                }
+            }
+        } catch (Throwable $e) {
+            $this->issues[] = sprintf('directory "%s" cannot be expanded: %s', $relative, $e->getMessage());
+        }
+
+        return $files;
     }
 
     /**
@@ -109,6 +185,12 @@ final class GitStatus
             }
 
             $relative = PathNormalizer::relative($path);
+
+            if ($this->isRealDirectory($relative)) {
+                array_push($files, ...$this->expandDirectory($relative));
+
+                continue;
+            }
 
             if (array_intersect(PathNormalizer::extensionChain($relative), self::PHP_EXTENSIONS) !== []) {
                 $files[] = $relative;

@@ -193,4 +193,51 @@ class GitHardeningTest extends TestCase
             SecurityFinding::query()->where('rule_id', 'code.git-executable-config')->pluck('path')->all(),
         );
     }
+
+    public function test_a_php_file_inside_a_nested_repository_is_reported_as_executable(): void
+    {
+        File::ensureDirectoryExists($this->root.'/app/nested');
+        $nested = new Process(['git', '-C', $this->root.'/app/nested', 'init', '-q']);
+        $nested->mustRun();
+        file_put_contents($this->root.'/app/nested/s.php', '<?php echo "neutralized";');
+
+        $this->scan();
+
+        $this->assertContains(
+            'app/nested/s.php',
+            SecurityFinding::query()->where('rule_id', 'code.untracked-executable')->pluck('path')->all(),
+        );
+    }
+
+    public function test_a_self_ignored_nested_repository_does_not_hide_a_php_file(): void
+    {
+        File::ensureDirectoryExists($this->root.'/config/z2');
+        $nested = new Process(['git', '-C', $this->root.'/config/z2', 'init', '-q']);
+        $nested->mustRun();
+        file_put_contents($this->root.'/config/z2/.gitignore', "*\n");
+        file_put_contents($this->root.'/config/z2/s.php', '<?php echo "neutralized";');
+
+        $this->scan();
+
+        $this->assertContains(
+            'config/z2/s.php',
+            SecurityFinding::query()->where('rule_id', 'code.untracked-executable')->pluck('path')->all(),
+        );
+    }
+
+    public function test_resources_is_searched_for_ignored_php_files_by_default(): void
+    {
+        File::ensureDirectoryExists($this->root.'/resources/views');
+        file_put_contents($this->root.'/resources/views/.gitignore', "x.php\n");
+        file_put_contents($this->root.'/resources/views/x.php', '<?php echo "neutralized";');
+        $this->git(['add', '-A']);
+        $this->git(['-c', 'user.email=t@example.test', '-c', 'user.name=t', 'commit', '-q', '-m', 'res']);
+
+        $this->scan();
+
+        $this->assertContains(
+            'resources/views/x.php',
+            SecurityFinding::query()->where('rule_id', 'code.ignored-php-file')->pluck('path')->all(),
+        );
+    }
 }

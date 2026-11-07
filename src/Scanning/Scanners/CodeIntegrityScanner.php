@@ -149,7 +149,7 @@ final class CodeIntegrityScanner implements Scanner
     {
         /** @var list<string> $dirs */
         $dirs = array_values(array_filter(
-            (array) config('security-scanner.git.ignored_php_paths', ['app', 'bootstrap', 'config', 'database', 'routes']),
+            (array) config('security-scanner.git.ignored_php_paths', ['app', 'bootstrap', 'config', 'database', 'resources', 'routes']),
             static fn (mixed $v): bool => is_string($v) && $v !== '',
         ));
 
