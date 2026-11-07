@@ -55,7 +55,7 @@ class SecurityBaselineCommand extends Command
         // that moved WITHOUT a new baseline (a commit makes `git status` clean).
         $git = new GitStatus(Zones::base());
 
-        if ($git->available()) {
+        if ((bool) config('security-scanner.git.enabled', true) && $git->available()) {
             $head = $git->head(full: true);
 
             if ($head !== null && $head !== '') {

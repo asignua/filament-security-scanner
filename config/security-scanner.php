@@ -86,6 +86,12 @@ return [
     'git_timeout' => (int) env('SECURITY_SCANNER_GIT_TIMEOUT', 60),
 
     'git' => [
+        // false = the site is deployed without a git checkout (an archive): git is not run,
+        // `code.git-unavailable` and the matching `hygiene.scanner-degraded` are not raised,
+        // and integrity rests on the hash baselines alone (`security:baseline`). With git
+        // off and no baseline at all a single `code.baseline-missing` hint remains.
+        'enabled' => (bool) env('SECURITY_SCANNER_GIT', true),
+
         // Code directories searched for PHP files that .gitignore hides from
         // `git status` (a nested config/.gitignore listing a shell). Relative to the
         // project root; bootstrap/cache is always skipped. Empty = off.

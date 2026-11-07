@@ -215,6 +215,11 @@ Also keep PHP-FPM from writing to your code, and do not treat this package as a 
 Everything is in `config/security-scanner.php` and the `SECURITY_SCANNER_*` environment variables (enabled, table prefix,
 retention, zones, allowlists, quarantine, upload check, notifications, Telegram, schedule). Tables are
 `security_scans`, `security_findings` and `security_baseline`, with an optional `SECURITY_SCANNER_TABLE_PREFIX`.
+Deployed from an archive, without a `.git`? Set `SECURITY_SCANNER_GIT=false` (`security-scanner.git.enabled`): git is not run,
+`code.git-unavailable` and its `hygiene.scanner-degraded` stay quiet and `security:baseline` skips the `HEAD`; if there is no
+baseline at all, one `code.baseline-missing` hint (path `git-off`) remains. A `storage` symlink to a shared directory
+(Deployer layout) is understood: tracked files below it are not reported as missing. `code.git-dir-writable` is not raised
+when `APP_ENV` is `local` or `testing`.
 `SecurityScanner::validateConfig()` returns a list of configuration problems you can call from your own health check.
 
 ## How it differs from other packages

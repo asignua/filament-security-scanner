@@ -153,4 +153,72 @@ class HardeningRoundTest extends TestCase
         $this->assertSame('restored', file_get_contents($free));
         $this->assertFileDoesNotExist($source);
     }
+
+    public function test_git_switched_off_silences_the_git_findings(): void
+    {
+        config(['security-scanner.git.enabled' => false]);
+
+        $this->scan();
+
+        $this->assertSame([], $this->paths('code.git-unavailable'));
+        $this->assertSame([], SecurityFinding::query()->where('rule_id', 'hygiene.scanner-degraded')->where('path', 'code')->pluck('path')->all());
+    }
+
+    public function test_git_switched_off_without_any_baseline_gives_one_clear_hint(): void
+    {
+        config(['security-scanner.git.enabled' => false]);
+
+        $this->scan();
+
+        $this->assertSame(['git-off'], $this->paths('code.baseline-missing'));
+    }
+
+    public function test_git_switched_off_with_a_vendor_zone_adds_no_second_hint(): void
+    {
+        File::ensureDirectoryExists($this->root.'/vendor');
+        file_put_contents($this->root.'/vendor/v.txt', 'x');
+        config([
+            'security-scanner.git.enabled' => false,
+            'security-scanner.zones' => array_merge((array) config('security-scanner.zones'), [
+                'vendor' => ['root' => 'vendor', 'kind' => 'vendor'],
+            ]),
+        ]);
+
+        $this->scan();
+        $this->assertSame(['vendor'], $this->paths('code.baseline-missing'));
+
+        SecurityFinding::query()->delete();
+        Artisan::call('security:baseline', ['--zone' => ['vendor']]);
+        $this->scan();
+        $this->assertSame([], $this->paths('code.baseline-missing'));
+    }
+
+    public function test_git_left_on_without_a_checkout_still_says_so(): void
+    {
+        $this->scan();
+
+        $this->assertSame([''], $this->paths('code.git-unavailable'));
+    }
+
+    public function test_tracked_files_under_a_symlinked_storage_are_not_reported_missing(): void
+    {
+        File::ensureDirectoryExists($this->root.'/storage/app/public');
+        file_put_contents($this->root.'/storage/app/keep.txt', 'k');
+        $this->initGit();
+
+        $shared = $this->root.'-shared';
+        File::moveDirectory($this->root.'/storage', $shared);
+        symlink($shared, $this->root.'/storage');
+        config(['filesystems.disks.public.root' => $shared.'/app/public']);
+
+        try {
+            $this->scan();
+
+            $this->assertSame([], $this->paths('code.deleted-file'));
+            $this->assertSame([], array_filter($this->paths('code.untracked-file'), static fn (string $p): bool => $p === 'storage'));
+        } finally {
+            @unlink($this->root.'/storage');
+            File::deleteDirectory($shared);
+        }
+    }
 }

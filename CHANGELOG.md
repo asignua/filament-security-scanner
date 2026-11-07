@@ -102,6 +102,10 @@ unchanged, so stored findings, quarantine copies and settings keep working. The 
 - **Restore / move fallback no longer uses `rename()`**: across filesystems it copied through a symlink planted at the
   target and overwrote what it pointed at. It copies with `fopen($target, 'xb')` and then removes the source.
 - New translation key (all 10 locales) for `code.head-unrecorded`.
+- **Setting `security-scanner.git.enabled`** (`SECURITY_SCANNER_GIT`, default on) for sites deployed without a `.git`: with it
+  off, `code.git-unavailable` and the matching `hygiene.scanner-degraded` are not raised; with no baseline at all one
+  `code.baseline-missing` hint (path `git-off`) remains.
+- A symlinked `storage/` (Deployer layout) no longer produces `code.deleted-file` for the tracked files below it.
 - New rule `code.git-dir-writable` (medium): the PHP user can write to `.git`, so git results cannot be trusted. Not raised
   when `app.env` is `local` or `testing`. README "Limits" explains the trust model.
 - New translation key (all 10 locales) for `code.git-dir-writable`.

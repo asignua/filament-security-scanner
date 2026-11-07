@@ -81,6 +81,12 @@ final class CodeIntegrityScanner implements Scanner
      */
     private function fromGit(ScanContext $context): Generator
     {
+        if (!(bool) config('security-scanner.git.enabled', true)) {
+            yield from $this->gitSwitchedOff($context);
+
+            return;
+        }
+
         $git = new GitStatus($context->base);
 
         if (!$git->available()) {
@@ -108,10 +114,18 @@ final class CodeIntegrityScanner implements Scanner
             return;
         }
 
+        // Deployer-style layout: `storage` is a symlink to a shared directory, so git
+        // sees every tracked file below it as deleted. It cannot look through the link.
+        $storageLinked = is_link(rtrim($context->base, '/').'/storage');
+
         foreach ($entries as $entry) {
             $path = $entry['path'];
 
             if ($context->isAllowlisted($path) || !$context->covers($path)) {
+                continue;
+            }
+
+            if ($storageLinked && ($path === 'storage' || str_starts_with($path, 'storage/'))) {
                 continue;
             }
 
@@ -137,6 +151,28 @@ final class CodeIntegrityScanner implements Scanner
         yield from $this->hiddenFromGit($git, $context);
 
         $this->issues = array_merge($this->issues, $git->issues());
+    }
+
+    /**
+     * Git is switched off on purpose: no `code.git-unavailable`, no degradation. The
+     * hash baseline is then the only integrity source, so a site with no baseline at all
+     * gets ONE hint (a vendor zone reports its own missing snapshot).
+     *
+     * @return Generator<Finding>
+     */
+    private function gitSwitchedOff(ScanContext $context): Generator
+    {
+        foreach ($context->zones as $zone) {
+            if ($zone->kind === SecurityZoneKind::Vendor) {
+                return;
+            }
+        }
+
+        if (!SecurityBaselineEntry::query()->where('complete', true)->exists()) {
+            yield $this->make($context, 'code.baseline-missing', 'git-off', [
+                'hint' => 'git is switched off and there is no baseline: code integrity is NOT checked; take one with security:baseline --zone=<zone>',
+            ]);
+        }
     }
 
     /**
