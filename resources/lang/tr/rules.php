@@ -35,4 +35,6 @@ return [
     'Variable variables with escaped names' => 'Kaçış karakterli adlara sahip değişken değişkenler',
     'Web server config injects code before every request' => 'Web sunucusu yapılandırması her istekten önce kod enjekte ediyor',
     'World-writable file in the web root' => 'Web kök dizininde herkesin yazabildiği dosya',
+    'PHP file hidden from git by .gitignore' => 'PHP dosyası .gitignore ile git\'ten gizlenmiş',
+    'Tracked file hidden from git status' => 'İzlenen dosya git status\'tan gizlenmiş',
 ];

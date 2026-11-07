@@ -165,6 +165,28 @@ return [
             'matcher' => ['type' => 'none'],
         ],
         [
+            // A nested .gitignore (`config/.gitignore` listing `aaa.php`) hides a PHP
+            // file from `git status`: invisible to the git half of the scanner.
+            'id' => 'code.ignored-php-file',
+            'scanner' => 'code',
+            'severity' => SecuritySeverity::High->value,
+            'applies_to' => $codeZones,
+            'weight' => 8,
+            'message' => 'security-scanner::rules.PHP file hidden from git by .gitignore',
+            'matcher' => ['type' => 'none'],
+        ],
+        [
+            // assume-unchanged / skip-worktree: the file may be modified and still
+            // look clean to `git status`.
+            'id' => 'code.git-index-flag',
+            'scanner' => 'code',
+            'severity' => SecuritySeverity::High->value,
+            'applies_to' => $codeZones,
+            'weight' => 7,
+            'message' => 'security-scanner::rules.Tracked file hidden from git status',
+            'matcher' => ['type' => 'none'],
+        ],
+        [
             'id' => 'code.deleted-file',
             'scanner' => 'code',
             'severity' => SecuritySeverity::Medium->value,

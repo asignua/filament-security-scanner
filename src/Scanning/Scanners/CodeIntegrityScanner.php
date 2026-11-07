@@ -133,7 +133,64 @@ final class CodeIntegrityScanner implements Scanner
             ], static fn (mixed $v): bool => $v !== null && $v !== ''));
         }
 
+        yield from $this->hiddenFromGit($git, $context);
+
         $this->issues = array_merge($this->issues, $git->issues());
+    }
+
+    /**
+     * What `git status` cannot show: ignored PHP files inside code directories, and
+     * index flags (assume-unchanged / skip-worktree) that make a modified file look
+     * clean. Each of them is a place to hide a shell in tracked code.
+     *
+     * @return Generator<Finding>
+     */
+    private function hiddenFromGit(GitStatus $git, ScanContext $context): Generator
+    {
+        /** @var list<string> $dirs */
+        $dirs = array_values(array_filter(
+            (array) config('security-scanner.git.ignored_php_paths', ['app', 'bootstrap', 'config', 'database', 'routes']),
+            static fn (mixed $v): bool => is_string($v) && $v !== '',
+        ));
+
+        $ignored = $git->ignoredPhpFiles($dirs);
+
+        if ($ignored === null) {
+            $context->issues?->markIncomplete($this->id());
+        }
+
+        foreach ($ignored ?? [] as $path) {
+            // The compiled-cache directory is ignored by design.
+            if (str_starts_with($path, 'bootstrap/cache/')
+                || $context->isAllowlisted($path)
+                || !$context->covers($path)) {
+                continue;
+            }
+
+            $context->candidates?->add($path, $this->id());
+
+            yield $this->make($context, 'code.ignored-php-file', $path, ['reason' => 'ignored by .gitignore; git status does not list it']);
+        }
+
+        $flags = $git->hiddenIndexEntries();
+
+        if ($flags === null) {
+            $context->issues?->markIncomplete($this->id());
+        }
+
+        foreach ($flags ?? [] as $entry) {
+            if ($context->isAllowlisted($entry['path']) || !$context->covers($entry['path'])) {
+                continue;
+            }
+
+            $context->candidates?->add($entry['path'], $this->id());
+
+            yield $this->make($context, 'code.git-index-flag', $entry['path'], ['flag' => $entry['flag']]);
+        }
+
+        foreach ($git->executableConfig() as $key) {
+            $this->issues[] = sprintf('git config "%s" makes git run a command; review .git/config', $key);
+        }
     }
 
     /**

@@ -85,6 +85,13 @@ return [
     'max_file_size' => (int) env('SECURITY_SCANNER_MAX_FILE_SIZE', 33554432),
     'git_timeout' => (int) env('SECURITY_SCANNER_GIT_TIMEOUT', 60),
 
+    'git' => [
+        // Code directories searched for PHP files that .gitignore hides from
+        // `git status` (a nested config/.gitignore listing a shell). Relative to the
+        // project root; bootstrap/cache is always skipped. Empty = off.
+        'ignored_php_paths' => ['app', 'bootstrap', 'config', 'database', 'routes'],
+    ],
+
     // Host file that adds to / overrides the rules (see RuleRegistry).
     'heuristics_override' => 'security-scanner-heuristics.php',
 

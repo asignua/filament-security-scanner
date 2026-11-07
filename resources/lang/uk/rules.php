@@ -35,4 +35,6 @@ return [
     'Variable variables with escaped names' => 'Змінні змінні з екранованими іменами',
     'Web server config injects code before every request' => 'Конфіг веб-сервера підключає код перед кожним запитом',
     'World-writable file in the web root' => 'Файл із записом для всіх у корені сайту',
+    'PHP file hidden from git by .gitignore' => 'PHP-файл, прихований від git через .gitignore',
+    'Tracked file hidden from git status' => 'Відстежуваний файл прихований від git status',
 ];

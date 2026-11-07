@@ -35,4 +35,6 @@ return [
     'Variable variables with escaped names' => 'Zmienne zmiennych z eskejpowanymi nazwami',
     'Web server config injects code before every request' => 'Konfiguracja serwera dołącza kod przed każdym żądaniem',
     'World-writable file in the web root' => 'Plik z zapisem dla wszystkich w katalogu głównym',
+    'PHP file hidden from git by .gitignore' => 'Plik PHP ukryty przed git przez .gitignore',
+    'Tracked file hidden from git status' => 'Śledzony plik ukryty przed git status',
 ];

@@ -26,6 +26,9 @@ use Throwable;
  */
 final class GitStatus
 {
+    /** Extensions the PHP engine executes. */
+    private const array PHP_EXTENSIONS = ['php', 'php3', 'php4', 'php5', 'php6', 'php7', 'php8', 'phtml', 'pht', 'phar', 'inc'];
+
     /** @var list<string> */
     private array $issues = [];
 
@@ -71,6 +74,111 @@ final class GitStatus
         $out = $this->run(['status', '--porcelain=v1', '-z', '--untracked-files=all']);
 
         return is_string($out) ? self::parsePorcelainZ($out) : null;
+    }
+
+    /**
+     * Ignored files with a PHP-executable extension inside the given code
+     * directories. `git status` never lists them, which is exactly how a nested
+     * `.gitignore` (`config/.gitignore` with `aaa.php`) hides a shell inside
+     * tracked code. `null` = git did not answer.
+     *
+     * @param list<string> $paths directories relative to the root
+     *
+     * @return list<string>|null
+     */
+    public function ignoredPhpFiles(array $paths): ?array
+    {
+        if ($paths === []) {
+            return [];
+        }
+
+        $out = $this->run(array_merge(['ls-files', '--others', '--ignored', '--exclude-standard', '-z', '--'], $paths));
+
+        if (!is_string($out)) {
+            return null;
+        }
+
+        $files = [];
+
+        foreach (explode("\0", $out) as $path) {
+            if ($path === '') {
+                continue;
+            }
+
+            $relative = PathNormalizer::relative($path);
+
+            if (array_intersect(PathNormalizer::extensionChain($relative), self::PHP_EXTENSIONS) !== []) {
+                $files[] = $relative;
+            }
+        }
+
+        return $files;
+    }
+
+    /**
+     * Tracked files whose index entry hides changes from `git status`:
+     * `assume-unchanged` (lowercase tag in `ls-files -v`) and `skip-worktree`
+     * (`S`). Either way a modified file looks clean.
+     *
+     * @return list<array{path: string, flag: string}>|null
+     */
+    public function hiddenIndexEntries(): ?array
+    {
+        $out = $this->run(['ls-files', '-v', '-z']);
+
+        if (!is_string($out)) {
+            return null;
+        }
+
+        $entries = [];
+
+        foreach (explode("\0", $out) as $field) {
+            if (strlen($field) < 3) {
+                continue;
+            }
+
+            $tag = $field[0];
+
+            if ($tag === 'S' || ctype_lower($tag)) {
+                $entries[] = [
+                    'path' => PathNormalizer::relative(substr($field, 2)),
+                    'flag' => $tag === 'S' ? 'skip-worktree' : 'assume-unchanged',
+                ];
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Repository config keys that make git run a command, other than the git-lfs
+     * filter. Read from the local config (`git config` executes nothing).
+     *
+     * @return list<string>
+     */
+    public function executableConfig(): array
+    {
+        $out = $this->run(['config', '--local', '--list', '-z']);
+
+        if (!is_string($out)) {
+            return [];
+        }
+
+        $found = [];
+
+        foreach (explode("\0", $out) as $entry) {
+            [$key, $value] = array_pad(explode("\n", $entry, 2), 2, '');
+            $key = strtolower($key);
+
+            $isCommand = in_array($key, ['core.fsmonitor', 'core.sshcommand', 'core.hookspath', 'core.editor', 'core.pager'], true)
+                || preg_match('~^(?:filter\..+\.(?:clean|smudge|process)|diff\..+\.(?:textconv|command)|merge\..+\.driver)$~', $key) === 1;
+
+            if ($isCommand && preg_match('~^(?:false|true|git[- ]lfs\b)~i', trim($value)) !== 1) {
+                $found[] = $key;
+            }
+        }
+
+        return $found;
     }
 
     /**
@@ -141,6 +249,15 @@ final class GitStatus
             // WITHOUT this the uid difference gives a "mode change" on EVERY tracked
             // file, and the very first run alarms on the entire repository.
             '-c', 'core.fileMode=false',
+            // THINGS GIT MAY EXECUTE ON `status`, switched off: `core.fsmonitor` names a
+            // COMMAND that git runs to ask what changed (anyone who can write
+            // .git/config gets code execution as the web user on the nightly scan),
+            // and `core.hooksPath` redirects hooks to a directory of the attacker's
+            // choice. Clean/smudge FILTER drivers (`filter.<name>.clean`) cannot be
+            // blanket-disabled (git-lfs needs them), so {@see executableConfig()}
+            // reports unexpected ones instead.
+            '-c', 'core.fsmonitor=false',
+            '-c', 'core.hooksPath=/dev/null',
             '-C', $this->base,
         ], $arguments);
 
