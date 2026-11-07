@@ -10,6 +10,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // `testbench workbench:build` brings its own users table; the demo wants `is_active`.
+        Schema::dropIfExists('users');
         Schema::create('users', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
@@ -20,6 +22,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        Schema::dropIfExists('notifications');
         Schema::create('notifications', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('type');

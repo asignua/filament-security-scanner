@@ -21,9 +21,9 @@ trait MakesFindings
         $finding = new SecurityFinding;
         $finding->forceFill(array_merge([
             'ulid' => (string) Str::ulid(),
-            'fingerprint' => Finding::fingerprintFor('upload.executable-file', 'uploads', $path, null),
+            'fingerprint' => Finding::fingerprintFor('uploads.executable-extension', 'uploads', $path, null),
             'scanner' => 'uploads',
-            'rule_id' => 'upload.executable-file',
+            'rule_id' => 'uploads.executable-extension',
             'severity' => SecuritySeverity::High,
             'severity_weight' => SecuritySeverity::High->weight(),
             'zone' => 'storage_public',

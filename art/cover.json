@@ -1,0 +1,16 @@
+{
+    "shots": [],
+    "covers": [
+        {
+            "html": "../../scripts/art/cover.html",
+            "out": "cover.jpg",
+            "query": {
+                "title": "Know when files change under you",
+                "lead": "Finds web shells in uploads, polyglot images, drift from git and from a vendor hash snapshot. Alerts to the panel, e-mail and Telegram; quarantine you can undo. Detection, not protection.",
+                "chips": "Uploads, git and vendor checks|Quarantine & restore|Per-channel alerts|Deny by default",
+                "shot": "../../filament-security-scanner/art/cover-source.jpg",
+                "crop": "200,100,2400,1500"
+            }
+        }
+    ]
+}

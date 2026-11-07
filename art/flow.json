@@ -1,0 +1,61 @@
+{
+  "base": "http://host.docker.internal:8765",
+  "login": {
+    "path": "/admin/login",
+    "email": "emma@example.com",
+    "password": "password"
+  },
+  "shots": [
+    {
+      "path": "/admin/security",
+      "theme": "light",
+      "actions": [
+        {
+          "waitFor": "tr:has-text(\"invoice-copy.php\")"
+        },
+        {
+          "eval": "[\"start\", ([...document.querySelectorAll('tr')].find(r=>r.innerText.includes(\"invoice-copy.php\"))||{innerText:'NO ROW'}).innerText.replace(/\\s+/g,' ').slice(0,170)]"
+        },
+        {
+          "click": "tr:has-text(\"invoice-copy.php\") .fi-dropdown-trigger button"
+        },
+        {
+          "click": ".fi-dropdown-panel:visible button:has-text(\"Acknowledge\"), .fi-dropdown-panel:visible a:has-text(\"Acknowledge\")"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "eval": "[\"after-acknowledge\", ([...document.querySelectorAll('tr')].find(r=>r.innerText.includes(\"invoice-copy.php\"))||{innerText:'NO ROW'}).innerText.replace(/\\s+/g,' ').slice(0,170)]"
+        },
+        {
+          "click": "tr:has-text(\"invoice-copy.php\") .fi-dropdown-trigger button"
+        },
+        {
+          "click": ".fi-dropdown-panel:visible button:has-text(\"Ignore\"), .fi-dropdown-panel:visible a:has-text(\"Ignore\")"
+        },
+        {
+          "click": ".fi-modal-window:visible button:has-text(\"Confirm\")"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "eval": "[\"after-ignore\", ([...document.querySelectorAll('tr')].find(r=>r.innerText.includes(\"invoice-copy.php\"))||{innerText:'NO ROW'}).innerText.replace(/\\s+/g,' ').slice(0,170)]"
+        }
+      ]
+    },
+    {
+      "path": "/admin/security",
+      "theme": "light",
+      "actions": [
+        {
+          "waitFor": "tr:has-text(\"holiday.jpg\")"
+        },
+        {
+          "eval": "[\"holiday-start\", ([...document.querySelectorAll('tr')].find(r=>r.innerText.includes(\"holiday.jpg\"))||{innerText:'NO ROW'}).innerText.replace(/\\s+/g,' ').slice(0,170)]"
+        }
+      ]
+    }
+  ]
+}

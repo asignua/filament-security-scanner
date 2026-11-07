@@ -1,0 +1,131 @@
+{
+  "base": "http://host.docker.internal:8765",
+  "login": {
+    "path": "/admin/login",
+    "email": "emma@example.com",
+    "password": "password"
+  },
+  "shots": [
+    {
+      "path": "/admin/security",
+      "theme": "light",
+      "out": "findings.jpg",
+      "waitFor": "tr:has-text(\"invoice-copy.php\")",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "path": "/admin/security",
+      "theme": "light",
+      "out": "actions.jpg",
+      "waitFor": "tr:has-text(\"invoice-copy.php\")",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "actions": [
+        {
+          "click": "tr:has-text(\"invoice-copy.php\") .fi-dropdown-trigger button"
+        },
+        {
+          "waitFor": ".fi-dropdown-panel:visible"
+        },
+        {
+          "wait": 300
+        }
+      ]
+    },
+    {
+      "path": "/admin/security",
+      "theme": "light",
+      "out": "finding.jpg",
+      "waitFor": "tr:has-text(\"invoice-copy.php\")",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "actions": [
+        {
+          "click": "tr:has-text(\"invoice-copy.php\") .fi-dropdown-trigger button"
+        },
+        {
+          "click": ".fi-dropdown-panel:visible a:has-text(\"View\")"
+        },
+        {
+          "waitFor": ".fi-in-text"
+        },
+        {
+          "wait": 600
+        }
+      ]
+    },
+    {
+      "path": "/admin/security",
+      "theme": "dark",
+      "out": "findings-dark.jpg",
+      "waitFor": "tr:has-text(\"invoice-copy.php\")",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "path": "/admin/security",
+      "theme": "dark",
+      "out": "actions-dark.jpg",
+      "waitFor": "tr:has-text(\"invoice-copy.php\")",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "actions": [
+        {
+          "click": "tr:has-text(\"invoice-copy.php\") .fi-dropdown-trigger button"
+        },
+        {
+          "waitFor": ".fi-dropdown-panel:visible"
+        },
+        {
+          "wait": 300
+        }
+      ]
+    },
+    {
+      "path": "/admin/security",
+      "theme": "dark",
+      "out": "finding-dark.jpg",
+      "waitFor": "tr:has-text(\"invoice-copy.php\")",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "actions": [
+        {
+          "click": "tr:has-text(\"invoice-copy.php\") .fi-dropdown-trigger button"
+        },
+        {
+          "click": ".fi-dropdown-panel:visible a:has-text(\"View\")"
+        },
+        {
+          "waitFor": ".fi-in-text"
+        },
+        {
+          "wait": 600
+        }
+      ]
+    },
+    {
+      "path": "/admin/security",
+      "theme": "light",
+      "out": "cover-source.jpg",
+      "stamp": false,
+      "waitFor": "tr:has-text(\"invoice-copy.php\")",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    }
+  ]
+}

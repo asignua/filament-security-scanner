@@ -37,18 +37,24 @@ class DatabaseSeeder extends Seeder
 
         Artisan::call('security:scan', ['--trigger' => 'manual', '--fail-on' => 'none']);
 
-        $this->row('upload.executable-file', 'upload', 'storage/app/public/old/legacy-form.php', SecuritySeverity::High, SecurityFindingStatus::Acknowledged);
+        $this->row('uploads.executable-extension', 'uploads', 'storage/app/public/old/legacy-form.php', SecuritySeverity::High, SecurityFindingStatus::Acknowledged);
         $this->row('obf.php-after-binary', 'obfuscation', 'storage/app/public/old/banner.png', SecuritySeverity::Critical, SecurityFindingStatus::Ignored);
-        $this->row('code.tracked-changed', 'code', 'app/Http/Controllers/HomeController.php', SecuritySeverity::Medium, SecurityFindingStatus::Resolved);
-        $this->row('hygiene.debug-on', 'hygiene', '.env', SecuritySeverity::Low, SecurityFindingStatus::New);
+        $this->row('code.modified-file', 'code', 'app/Http/Controllers/HomeController.php', SecuritySeverity::Medium, SecurityFindingStatus::Resolved);
+        $this->row('hygiene.debug-enabled', 'hygiene', '.env', SecuritySeverity::Low, SecurityFindingStatus::New);
     }
 
     private function row(string $rule, string $scanner, string $path, SecuritySeverity $severity, SecurityFindingStatus $status): void
     {
+        $fingerprint = Finding::fingerprintFor($rule, $scanner, $path, null);
+
+        if (SecurityFinding::query()->where('fingerprint', $fingerprint)->exists()) {
+            return;
+        }
+
         $finding = new SecurityFinding;
         $finding->forceFill([
             'ulid' => (string) Str::ulid(),
-            'fingerprint' => Finding::fingerprintFor($rule, $scanner, $path, null),
+            'fingerprint' => $fingerprint,
             'scanner' => $scanner,
             'rule_id' => $rule,
             'severity' => $severity,

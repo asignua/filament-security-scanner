@@ -1,0 +1,52 @@
+{
+  "base": "http://host.docker.internal:8765",
+  "login": {
+    "path": "/admin/login",
+    "email": "emma@example.com",
+    "password": "password"
+  },
+  "shots": [
+    {
+      "path": "/admin/security",
+      "theme": "light",
+      "actions": [
+        {
+          "waitFor": "tr:has-text(\"holiday.jpg\")"
+        },
+        {
+          "eval": "[\"start\", ([...document.querySelectorAll('tr')].find(r=>r.innerText.includes(\"holiday.jpg\"))||{innerText:'NO ROW'}).innerText.replace(/\\s+/g,' ').slice(0,170)]"
+        },
+        {
+          "click": "tr:has-text(\"holiday.jpg\") .fi-dropdown-trigger button"
+        },
+        {
+          "click": ".fi-dropdown-panel:visible button:has-text(\"Quarantine\")"
+        },
+        {
+          "click": ".fi-modal-window:visible button:has-text(\"Confirm\")"
+        },
+        {
+          "wait": 1500
+        },
+        {
+          "eval": "[\"after-quarantine\", ([...document.querySelectorAll('tr')].find(r=>r.innerText.includes(\"holiday.jpg\"))||{innerText:'NO ROW'}).innerText.replace(/\\s+/g,' ').slice(0,170)]"
+        },
+        {
+          "click": "tr:has-text(\"holiday.jpg\") .fi-dropdown-trigger button"
+        },
+        {
+          "click": ".fi-dropdown-panel:visible button:has-text(\"Restore\")"
+        },
+        {
+          "click": ".fi-modal-window:visible button:has-text(\"Confirm\")"
+        },
+        {
+          "wait": 1500
+        },
+        {
+          "eval": "[\"after-restore\", ([...document.querySelectorAll('tr')].find(r=>r.innerText.includes(\"holiday.jpg\"))||{innerText:'NO ROW'}).innerText.replace(/\\s+/g,' ').slice(0,170)]"
+        }
+      ]
+    }
+  ]
+}
