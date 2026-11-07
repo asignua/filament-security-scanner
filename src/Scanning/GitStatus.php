@@ -32,6 +32,9 @@ final class GitStatus
     /** @var list<string> */
     private array $issues = [];
 
+    /** @var list<array{key: string, filter: string|null}>|false|null false = detection failed */
+    private array|false|null $commandConfig = null;
+
     public function __construct(private readonly string $base) {}
 
     /**
@@ -151,34 +154,69 @@ final class GitStatus
     }
 
     /**
-     * Repository config keys that make git run a command, other than the git-lfs
-     * filter. Read from the local config (`git config` executes nothing).
+     * Config keys (from ALL scopes, with `include.path`/`includeIf` followed) that
+     * make git run a command, other than the git-lfs filter. `git config` executes
+     * nothing, so this is safe to read.
+     *
+     * The value is matched ANCHORED: `clean = true && cmd` starts with `true` and
+     * used to pass an unanchored `^true` check. A boolean is accepted only for the
+     * keys that take one; a filter only when it is exactly a git-lfs command.
+     * Detection runs BEFORE any other git command (see {@see run()}), and the
+     * flagged filters are switched off for those commands.
      *
      * @return list<string>
      */
     public function executableConfig(): array
     {
-        $out = $this->run(['config', '--local', '--list', '-z']);
+        return array_values(array_map(
+            static fn (array $item): string => $item['key'],
+            $this->commandConfig() ?? [],
+        ));
+    }
+
+    /**
+     * @return list<array{key: string, filter: string|null}>|null `null` = config could not be read
+     */
+    private function commandConfig(): ?array
+    {
+        if ($this->commandConfig !== null) {
+            return $this->commandConfig === false ? null : $this->commandConfig;
+        }
+
+        $out = $this->run(['config', '--includes', '--list', '-z'], neutralise: false);
 
         if (!is_string($out)) {
-            return [];
+            $this->commandConfig = false;
+
+            return null;
         }
 
         $found = [];
 
         foreach (explode("\0", $out) as $entry) {
+            if ($entry === '') {
+                continue;
+            }
+
             [$key, $value] = array_pad(explode("\n", $entry, 2), 2, '');
-            $key = strtolower($key);
+            $value = trim($value);
+            $filter = null;
 
-            $isCommand = in_array($key, ['core.fsmonitor', 'core.sshcommand', 'core.hookspath', 'core.editor', 'core.pager'], true)
-                || preg_match('~^(?:filter\..+\.(?:clean|smudge|process)|diff\..+\.(?:textconv|command)|merge\..+\.driver)$~', $key) === 1;
+            if (preg_match('~^filter\.(.+)\.(?:clean|smudge|process)$~i', $key, $m) === 1) {
+                $filter = $m[1];
+                $benign = preg_match('~^git[- ]lfs (?:clean -- %f|smudge(?: --skip)? -- %f|filter-process(?: --skip)?)$~', $value) === 1;
+            } elseif (preg_match('~^(?:core\.(?:fsmonitor|sshcommand|hookspath|editor|pager)|diff\..+\.(?:textconv|command)|merge\..+\.driver)$~i', $key) === 1) {
+                $benign = preg_match('~^(?:false|true)$~i', $value) === 1;
+            } else {
+                continue;
+            }
 
-            if ($isCommand && preg_match('~^(?:false|true|git[- ]lfs\b)~i', trim($value)) !== 1) {
-                $found[] = $key;
+            if (!$benign) {
+                $found[] = ['key' => $key, 'filter' => $filter];
             }
         }
 
-        return $found;
+        return $this->commandConfig = $found;
     }
 
     /**
@@ -239,8 +277,33 @@ final class GitStatus
     /**
      * @param list<string> $arguments
      */
-    private function run(array $arguments): ?string
+    private function run(array $arguments, bool $neutralise = true): ?string
     {
+        $overrides = [];
+
+        if ($neutralise) {
+            // Filters are detected FIRST. `git status` runs a clean filter to compare
+            // content of stat-dirty files; if the config cannot be read we cannot
+            // vouch for what git would execute, so git "did not answer".
+            $config = $this->commandConfig();
+
+            if ($config === null) {
+                return null;
+            }
+
+            // Every flagged filter is emptied (an empty command means "no filter") and
+            // made non-required, so git neither runs it nor refuses to continue.
+            // Exact git-lfs filters are not flagged and stay intact: emptied, they
+            // would make every LFS file look modified.
+            foreach (array_unique(array_filter(array_column($config, 'filter'))) as $name) {
+                foreach (['clean', 'smudge', 'process'] as $variable) {
+                    array_push($overrides, '-c', 'filter.'.$name.'.'.$variable.'=');
+                }
+
+                array_push($overrides, '-c', 'filter.'.$name.'.required=false');
+            }
+        }
+
         $command = array_merge([
             'git',
             '--no-optional-locks',
@@ -256,8 +319,10 @@ final class GitStatus
             // choice. Clean/smudge FILTER drivers (`filter.<name>.clean`) cannot be
             // blanket-disabled (git-lfs needs them), so {@see executableConfig()}
             // reports unexpected ones instead.
-            '-c', 'core.fsmonitor=false',
-            '-c', 'core.hooksPath=/dev/null',
+            // Not passed to the config READ: our own `-c` would show up in
+            // `git config --list` and be reported as the repository's.
+            ...($neutralise ? ['-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null'] : []),
+            ...$overrides,
             '-C', $this->base,
         ], $arguments);
 

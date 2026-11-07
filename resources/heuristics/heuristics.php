@@ -187,6 +187,18 @@ return [
             'matcher' => ['type' => 'none'],
         ],
         [
+            // A config key that makes git run a command (a clean filter, fsmonitor,
+            // hooksPath…): code execution as the web user on every `git status`.
+            // The scanner switches the command off before running git and reports it.
+            'id' => 'code.git-executable-config',
+            'scanner' => 'code',
+            'severity' => SecuritySeverity::High->value,
+            'applies_to' => $codeZones,
+            'weight' => 8,
+            'message' => 'security-scanner::rules.Git config makes git run a command',
+            'matcher' => ['type' => 'none'],
+        ],
+        [
             'id' => 'code.deleted-file',
             'scanner' => 'code',
             'severity' => SecuritySeverity::Medium->value,

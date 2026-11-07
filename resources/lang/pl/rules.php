@@ -37,4 +37,5 @@ return [
     'World-writable file in the web root' => 'Plik z zapisem dla wszystkich w katalogu głównym',
     'PHP file hidden from git by .gitignore' => 'Plik PHP ukryty przed git przez .gitignore',
     'Tracked file hidden from git status' => 'Śledzony plik ukryty przed git status',
+    'Git config makes git run a command' => 'Konfiguracja git powoduje uruchomienie polecenia przez git',
 ];

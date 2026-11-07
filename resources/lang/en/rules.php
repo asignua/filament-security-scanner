@@ -37,4 +37,5 @@ return [
     'World-writable file in the web root' => 'World-writable file in the web root',
     'PHP file hidden from git by .gitignore' => 'PHP file hidden from git by .gitignore',
     'Tracked file hidden from git status' => 'Tracked file hidden from git status',
+    'Git config makes git run a command' => 'Git config makes git run a command',
 ];

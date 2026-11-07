@@ -139,4 +139,58 @@ class GitHardeningTest extends TestCase
         sort($keys);
         $this->assertSame(['core.fsmonitor', 'filter.evil.clean'], $keys);
     }
+
+    /**
+     * A tracked file whose stat data differ from the index, so that git has to
+     * run its clean filter to learn whether the content changed.
+     */
+    private function trackFilteredFile(): void
+    {
+        file_put_contents($this->root.'/.gitattributes', "*.dat filter=evil\n");
+        file_put_contents($this->root.'/app/f.dat', 'one');
+        $this->git(['add', '-A']);
+        $this->git(['-c', 'user.email=t@example.test', '-c', 'user.name=t', 'commit', '-q', '-m', 'dat']);
+        file_put_contents($this->root.'/app/f.dat', 'two');
+        touch($this->root.'/app/f.dat', time() + 10);
+    }
+
+    public function test_git_status_does_not_run_a_clean_filter_that_passes_the_old_check(): void
+    {
+        $marker = $this->root.'/filter-ran';
+        $this->trackFilteredFile();
+        $this->git(['config', 'filter.evil.clean', 'true && touch '.escapeshellarg($marker).' && cat']);
+
+        $git = new GitStatus($this->root);
+        $entries = $git->entries();
+
+        $this->assertIsArray($entries);
+        $this->assertFileDoesNotExist($marker, 'git status must not execute a clean filter.');
+        $this->assertContains('filter.evil.clean', $git->executableConfig());
+    }
+
+    public function test_a_filter_defined_behind_an_include_is_neither_run_nor_missed(): void
+    {
+        $marker = $this->root.'/include-filter-ran';
+        $this->trackFilteredFile();
+        file_put_contents($this->root.'/.git/extra.cfg', "[filter \"evil\"]\n\tclean = touch ".$marker." && cat\n");
+        $this->git(['config', 'include.path', 'extra.cfg']);
+
+        $git = new GitStatus($this->root);
+        $git->entries();
+
+        $this->assertFileDoesNotExist($marker);
+        $this->assertContains('filter.evil.clean', $git->executableConfig());
+    }
+
+    public function test_executable_git_config_becomes_a_finding(): void
+    {
+        $this->git(['config', 'filter.evil.clean', 'sh -c id']);
+
+        $this->scan();
+
+        $this->assertSame(
+            ['.git/config#filter.evil.clean'],
+            SecurityFinding::query()->where('rule_id', 'code.git-executable-config')->pluck('path')->all(),
+        );
+    }
 }

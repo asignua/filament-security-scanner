@@ -37,4 +37,5 @@ return [
     'World-writable file in the web root' => 'Web kök dizininde herkesin yazabildiği dosya',
     'PHP file hidden from git by .gitignore' => 'PHP dosyası .gitignore ile git\'ten gizlenmiş',
     'Tracked file hidden from git status' => 'İzlenen dosya git status\'tan gizlenmiş',
+    'Git config makes git run a command' => 'Git yapılandırması git\'in bir komut çalıştırmasına neden olur',
 ];

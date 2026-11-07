@@ -190,6 +190,8 @@ final class CodeIntegrityScanner implements Scanner
 
         foreach ($git->executableConfig() as $key) {
             $this->issues[] = sprintf('git config "%s" makes git run a command; review .git/config', $key);
+
+            yield $this->make($context, 'code.git-executable-config', '.git/config#'.$key, ['key' => $key]);
         }
     }
 
