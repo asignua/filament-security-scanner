@@ -112,7 +112,9 @@ Four scanners, driven by rules that are plain data (`resources/heuristics/heuris
 - **Upload zones** - executable files, server config files (`.htaccess`, `.user.ini`), symlinks and PHP hidden inside
   binary files (polyglots: an image that also contains PHP) in folders the app writes to.
 - **Code integrity** - tracked files that differ from the git commit, untracked files in the repository, files in the
-  web root that are not expected, and a hash comparison of `vendor/` against the deploy-time snapshot.
+  web root that are not expected, PHP files that a nested `.gitignore` hides from `git status` in `app`, `bootstrap`
+  (not `bootstrap/cache`), `config`, `database` and `routes` (`security-scanner.git.ignored_php_paths`), tracked files
+  marked `assume-unchanged` / `skip-worktree`, and a hash comparison of `vendor/` against the deploy-time snapshot.
 - **Obfuscation** - decoded payloads passed to `eval`, `__halt_compiler` tricks, function names built from
   concatenation, code included from temporary streams.
 - **Environment hygiene** - debug mode in production, missing app key, `.env` in the web root, dangerous PHP settings,
@@ -154,6 +156,9 @@ Three independent channels, each with its own minimum severity, throttling and "
 | Panel (database notification) | `SecurityScanner::notifyUsersUsing(...)` + `->databaseNotifications()` on the panel | low |
 | E-mail | `SECURITY_SCANNER_NOTIFY_MAIL=ops@example.com` | high |
 | Telegram | `SECURITY_SCANNER_TELEGRAM_BOT_TOKEN`, `SECURITY_SCANNER_TELEGRAM_CHAT_ID` | high |
+
+The panel channel needs Laravel's `notifications` table. If the host has none yet, run `php artisan make:notifications-table`
+and `php artisan migrate`, and enable `->databaseNotifications()` on the panel; without both, panel alerts go nowhere.
 
 Throttling is `SECURITY_SCANNER_NOTIFY_THROTTLE` minutes (default 60); thresholds are
 `SECURITY_SCANNER_NOTIFY_MIN_PANEL|MAIL|TELEGRAM`. The first run is mailed as an "inventory", not as an alarm. A custom

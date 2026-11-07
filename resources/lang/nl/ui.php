@@ -77,4 +77,6 @@ return [
     'Zone' => 'Zone',
     '…and :count more — see the panel' => '…en nog :count — zie het paneel',
     'Quarantine refused: the file name is not valid UTF-8. The finding stays open; handle the file by hand.' => 'Quarantaine geweigerd: de bestandsnaam is geen geldig UTF-8. De bevinding blijft open; behandel het bestand handmatig.',
+    'No findings yet' => 'Nog geen bevindingen',
+    'Nothing is listed until a scan has run. Run php artisan security:scan to start the first one.' => 'Er wordt niets getoond voordat een scan is uitgevoerd. Voer php artisan security:scan uit om de eerste te starten.',
 ];

@@ -8,7 +8,6 @@ use Asignua\FilamentSecurityScanner\Enums\SecurityZoneKind;
 use FilesystemIterator;
 use Generator;
 use RecursiveCallbackFilterIterator;
-use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 
@@ -134,7 +133,7 @@ final readonly class Zone
      *
      * @param RecursiveIteratorIterator::CHILD_FIRST|RecursiveIteratorIterator::LEAVES_ONLY|RecursiveIteratorIterator::SELF_FIRST $mode
      *
-     * @return RecursiveIteratorIterator<RecursiveCallbackFilterIterator<mixed, mixed, RecursiveDirectoryIterator>|RecursiveDirectoryIterator>
+     * @return RecursiveIteratorIterator<RecursiveCallbackFilterIterator<mixed, mixed, ZoneDirectoryIterator>|ZoneDirectoryIterator>
      */
     public function iterator(int $mode = RecursiveIteratorIterator::LEAVES_ONLY, ?UnreadableDirectories $unreadable = null): RecursiveIteratorIterator
     {

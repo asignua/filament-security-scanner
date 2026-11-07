@@ -77,4 +77,6 @@ return [
     'Zone' => 'Bölge',
     '…and :count more — see the panel' => '…ve :count tane daha — panele bakın',
     'Quarantine refused: the file name is not valid UTF-8. The finding stays open; handle the file by hand.' => 'Karantina reddedildi: dosya adı geçerli UTF-8 değil. Bulgu açık kalır; dosyayı elle işleyin.',
+    'No findings yet' => 'Henüz bulgu yok',
+    'Nothing is listed until a scan has run. Run php artisan security:scan to start the first one.' => 'Bir tarama çalıştırılana kadar hiçbir şey listelenmez. İlk taramayı başlatmak için php artisan security:scan komutunu çalıştırın.',
 ];

@@ -28,6 +28,8 @@ class SecurityFindingsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading(__('security-scanner::ui.No findings yet'))
+            ->emptyStateDescription(__('security-scanner::ui.Nothing is listed until a scan has run. Run php artisan security:scan to start the first one.'))
             ->columns([
                 TextColumn::make('severity')
                     ->label(__('security-scanner::ui.Severity'))
