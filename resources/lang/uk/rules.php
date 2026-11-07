@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'A heuristics rule was rejected' => 'Правило евристик відхилено',
+    'A scanner did not complete its pass' => 'Сканер не завершив прохід',
+    'Application key is missing' => 'Ключ застосунку не заданий',
+    'Code hidden past __halt_compiler' => 'Код, прихований за __halt_compiler',
+    'Code included from a temporary stream' => 'Код підключається з тимчасового потоку',
+    'Compressed payload unpacked at runtime' => 'Стиснена навантага розпаковується під час виконання',
+    'Dangerous PHP setting' => 'Небезпечне налаштування PHP',
+    'Debug mode is on in production' => 'Режим налагодження увімкнено на проді',
+    'Decoded payload passed to eval' => 'Розкодована навантага передана в eval',
+    'Environment file inside the web root' => 'Файл .env у корені сайту',
+    'Executable file in an upload directory' => 'Виконуваний файл у теці завантажень',
+    'File appeared since the baseline' => 'Файл зʼявився після зняття знімка',
+    'File changed since the baseline' => 'Файл змінився після зняття знімка',
+    'File disappeared since the baseline' => 'Файл зник після зняття знімка',
+    'File too large to inspect' => 'Файл завеликий, вміст не перевіряли',
+    'Function name assembled from concatenation' => 'Імʼя функції зібране конкатенацією',
+    'Git baseline is unavailable' => 'Git-еталон недоступний',
+    'MAGICK_TIME_LIMIT is set' => 'Виставлено MAGICK_TIME_LIMIT',
+    'No baseline snapshot for this zone' => 'Для цієї зони немає знімка',
+    'PHP code inside a binary file' => 'PHP-код усередині бінарного файлу',
+    'Server config file in an upload directory' => 'Конфіг веб-сервера в теці завантажень',
+    'Symlink inside an upload directory' => 'Символьне посилання в теці завантажень',
+    'The pcntl extension is missing' => 'Відсутнє розширення pcntl',
+    'Tracked file differs from the commit' => 'Трекований файл відрізняється від коміту',
+    'Tracked file is missing' => 'Трекованого файлу немає на диску',
+    'Tracked file was renamed' => 'Трекований файл перейменовано',
+    'Unexpected PHP file in the web root' => 'Сторонній PHP-файл у корені сайту',
+    'Untracked executable file in the repository' => 'Нетрекований виконуваний файл у репозиторії',
+    'Untracked file in the repository' => 'Нетрекований файл у репозиторії',
+    'Variable variables with escaped names' => 'Змінні змінні з екранованими іменами',
+    'Web server config injects code before every request' => 'Конфіг веб-сервера підключає код перед кожним запитом',
+    'World-writable file in the web root' => 'Файл із записом для всіх у корені сайту',
+];

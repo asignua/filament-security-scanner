@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'A heuristics rule was rejected' => 'Uma regra heurística foi rejeitada',
+    'A scanner did not complete its pass' => 'Um scanner não concluiu sua execução',
+    'Application key is missing' => 'A chave da aplicação está ausente',
+    'Code hidden past __halt_compiler' => 'Código oculto após __halt_compiler',
+    'Code included from a temporary stream' => 'Código incluído a partir de um stream temporário',
+    'Compressed payload unpacked at runtime' => 'Payload compactado descompactado em tempo de execução',
+    'Dangerous PHP setting' => 'Configuração perigosa do PHP',
+    'Debug mode is on in production' => 'O modo de depuração está ativo em produção',
+    'Decoded payload passed to eval' => 'Payload decodificado passado ao eval',
+    'Environment file inside the web root' => 'Arquivo de ambiente dentro da raiz web',
+    'Executable file in an upload directory' => 'Arquivo executável em um diretório de upload',
+    'File appeared since the baseline' => 'Arquivo surgiu desde a linha de base',
+    'File changed since the baseline' => 'Arquivo alterado desde a linha de base',
+    'File disappeared since the baseline' => 'Arquivo desapareceu desde a linha de base',
+    'File too large to inspect' => 'Arquivo grande demais para inspeção',
+    'Function name assembled from concatenation' => 'Nome de função montado por concatenação',
+    'Git baseline is unavailable' => 'A linha de base do Git não está disponível',
+    'MAGICK_TIME_LIMIT is set' => 'MAGICK_TIME_LIMIT está definido',
+    'No baseline snapshot for this zone' => 'Sem snapshot de linha de base para esta zona',
+    'PHP code inside a binary file' => 'Código PHP dentro de um arquivo binário',
+    'Server config file in an upload directory' => 'Arquivo de configuração do servidor em um diretório de upload',
+    'Symlink inside an upload directory' => 'Symlink dentro de um diretório de upload',
+    'The pcntl extension is missing' => 'A extensão pcntl está ausente',
+    'Tracked file differs from the commit' => 'Arquivo rastreado difere do commit',
+    'Tracked file is missing' => 'Arquivo rastreado ausente',
+    'Tracked file was renamed' => 'Arquivo rastreado foi renomeado',
+    'Unexpected PHP file in the web root' => 'Arquivo PHP inesperado na raiz web',
+    'Untracked executable file in the repository' => 'Arquivo executável não rastreado no repositório',
+    'Untracked file in the repository' => 'Arquivo não rastreado no repositório',
+    'Variable variables with escaped names' => 'Variáveis variáveis com nomes escapados',
+    'Web server config injects code before every request' => 'A configuração do servidor web injeta código antes de cada requisição',
+    'World-writable file in the web root' => 'Arquivo com permissão de escrita para todos na raiz web',
+];

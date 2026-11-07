@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'A heuristics rule was rejected' => 'A heuristics rule was rejected',
+    'A scanner did not complete its pass' => 'A scanner did not complete its pass',
+    'Application key is missing' => 'Application key is missing',
+    'Code hidden past __halt_compiler' => 'Code hidden past __halt_compiler',
+    'Code included from a temporary stream' => 'Code included from a temporary stream',
+    'Compressed payload unpacked at runtime' => 'Compressed payload unpacked at runtime',
+    'Dangerous PHP setting' => 'Dangerous PHP setting',
+    'Debug mode is on in production' => 'Debug mode is on in production',
+    'Decoded payload passed to eval' => 'Decoded payload passed to eval',
+    'Environment file inside the web root' => 'Environment file inside the web root',
+    'Executable file in an upload directory' => 'Executable file in an upload directory',
+    'File appeared since the baseline' => 'File appeared since the baseline',
+    'File changed since the baseline' => 'File changed since the baseline',
+    'File disappeared since the baseline' => 'File disappeared since the baseline',
+    'File too large to inspect' => 'File too large to inspect',
+    'Function name assembled from concatenation' => 'Function name assembled from concatenation',
+    'Git baseline is unavailable' => 'Git baseline is unavailable',
+    'MAGICK_TIME_LIMIT is set' => 'MAGICK_TIME_LIMIT is set',
+    'No baseline snapshot for this zone' => 'No baseline snapshot for this zone',
+    'PHP code inside a binary file' => 'PHP code inside a binary file',
+    'Server config file in an upload directory' => 'Server config file in an upload directory',
+    'Symlink inside an upload directory' => 'Symlink inside an upload directory',
+    'The pcntl extension is missing' => 'The pcntl extension is missing',
+    'Tracked file differs from the commit' => 'Tracked file differs from the commit',
+    'Tracked file is missing' => 'Tracked file is missing',
+    'Tracked file was renamed' => 'Tracked file was renamed',
+    'Unexpected PHP file in the web root' => 'Unexpected PHP file in the web root',
+    'Untracked executable file in the repository' => 'Untracked executable file in the repository',
+    'Untracked file in the repository' => 'Untracked file in the repository',
+    'Variable variables with escaped names' => 'Variable variables with escaped names',
+    'Web server config injects code before every request' => 'Web server config injects code before every request',
+    'World-writable file in the web root' => 'World-writable file in the web root',
+];

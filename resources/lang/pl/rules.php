@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'A heuristics rule was rejected' => 'Reguła heurystyk została odrzucona',
+    'A scanner did not complete its pass' => 'Skaner nie zakończył przebiegu',
+    'Application key is missing' => 'Brak klucza aplikacji',
+    'Code hidden past __halt_compiler' => 'Kod ukryty za __halt_compiler',
+    'Code included from a temporary stream' => 'Kod dołączany z tymczasowego strumienia',
+    'Compressed payload unpacked at runtime' => 'Skompresowany ładunek rozpakowywany w czasie wykonania',
+    'Dangerous PHP setting' => 'Niebezpieczne ustawienie PHP',
+    'Debug mode is on in production' => 'Tryb debugowania włączony na produkcji',
+    'Decoded payload passed to eval' => 'Zdekodowany ładunek przekazany do eval',
+    'Environment file inside the web root' => 'Plik .env w katalogu głównym',
+    'Executable file in an upload directory' => 'Plik wykonywalny w katalogu przesłanych plików',
+    'File appeared since the baseline' => 'Plik pojawił się po wykonaniu migawki',
+    'File changed since the baseline' => 'Plik zmienił się po wykonaniu migawki',
+    'File disappeared since the baseline' => 'Plik zniknął po wykonaniu migawki',
+    'File too large to inspect' => 'Plik zbyt duży, aby sprawdzić zawartość',
+    'Function name assembled from concatenation' => 'Nazwa funkcji złożona z konkatenacji',
+    'Git baseline is unavailable' => 'Wzorzec git niedostępny',
+    'MAGICK_TIME_LIMIT is set' => 'Ustawiono MAGICK_TIME_LIMIT',
+    'No baseline snapshot for this zone' => 'Brak migawki dla tej strefy',
+    'PHP code inside a binary file' => 'Kod PHP wewnątrz pliku binarnego',
+    'Server config file in an upload directory' => 'Plik konfiguracyjny serwera w katalogu przesłanych plików',
+    'Symlink inside an upload directory' => 'Dowiązanie symboliczne w katalogu przesłanych plików',
+    'The pcntl extension is missing' => 'Brak rozszerzenia pcntl',
+    'Tracked file differs from the commit' => 'Śledzony plik różni się od commita',
+    'Tracked file is missing' => 'Brak śledzonego pliku',
+    'Tracked file was renamed' => 'Śledzony plik zmienił nazwę',
+    'Unexpected PHP file in the web root' => 'Nieoczekiwany plik PHP w katalogu głównym',
+    'Untracked executable file in the repository' => 'Nieśledzony plik wykonywalny w repozytorium',
+    'Untracked file in the repository' => 'Nieśledzony plik w repozytorium',
+    'Variable variables with escaped names' => 'Zmienne zmiennych z eskejpowanymi nazwami',
+    'Web server config injects code before every request' => 'Konfiguracja serwera dołącza kod przed każdym żądaniem',
+    'World-writable file in the web root' => 'Plik z zapisem dla wszystkich w katalogu głównym',
+];

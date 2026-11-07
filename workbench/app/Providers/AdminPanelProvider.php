@@ -27,7 +27,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->plugin(SecurityScannerPlugin::make())
+            ->databaseNotifications()
+            ->plugin(SecurityScannerPlugin::make()->navigationSort(10))
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

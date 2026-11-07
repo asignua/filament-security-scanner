@@ -19,12 +19,12 @@ class SmokeTest extends TestCase
     {
         $panel = Filament::getPanel('admin');
 
-        $this->assertTrue($panel->hasPlugin('asignua-filament-security-scanner'));
-        $this->assertInstanceOf(SecurityScannerPlugin::class, $panel->getPlugin('asignua-filament-security-scanner'));
+        $this->assertTrue($panel->hasPlugin('security-scanner'));
+        $this->assertInstanceOf(SecurityScannerPlugin::class, $panel->getPlugin('security-scanner'));
     }
 
     public function test_the_translations_are_loaded(): void
     {
-        $this->assertSame('Sample', __('filament-security-scanner::filament-security-scanner.sample'));
+        $this->assertSame('Security findings', __('security-scanner::ui.Security findings'));
     }
 }

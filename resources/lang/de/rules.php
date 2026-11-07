@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'A heuristics rule was rejected' => 'Eine Heuristikregel wurde abgelehnt',
+    'A scanner did not complete its pass' => 'Ein Scanner hat seinen Durchlauf nicht abgeschlossen',
+    'Application key is missing' => 'Der Anwendungsschlüssel fehlt',
+    'Code hidden past __halt_compiler' => 'Code versteckt hinter __halt_compiler',
+    'Code included from a temporary stream' => 'Code aus einem temporären Stream eingebunden',
+    'Compressed payload unpacked at runtime' => 'Komprimierte Nutzlast wird zur Laufzeit entpackt',
+    'Dangerous PHP setting' => 'Gefährliche PHP-Einstellung',
+    'Debug mode is on in production' => 'Debug-Modus ist in der Produktion aktiv',
+    'Decoded payload passed to eval' => 'Dekodierte Nutzlast an eval übergeben',
+    'Environment file inside the web root' => 'Umgebungsdatei im Web-Root',
+    'Executable file in an upload directory' => 'Ausführbare Datei in einem Upload-Verzeichnis',
+    'File appeared since the baseline' => 'Datei seit der Baseline hinzugekommen',
+    'File changed since the baseline' => 'Datei seit der Baseline geändert',
+    'File disappeared since the baseline' => 'Datei seit der Baseline verschwunden',
+    'File too large to inspect' => 'Datei zu groß zur Prüfung',
+    'Function name assembled from concatenation' => 'Funktionsname aus Verkettung zusammengesetzt',
+    'Git baseline is unavailable' => 'Git-Baseline nicht verfügbar',
+    'MAGICK_TIME_LIMIT is set' => 'MAGICK_TIME_LIMIT ist gesetzt',
+    'No baseline snapshot for this zone' => 'Kein Baseline-Snapshot für diese Zone',
+    'PHP code inside a binary file' => 'PHP-Code in einer Binärdatei',
+    'Server config file in an upload directory' => 'Serverkonfigurationsdatei in einem Upload-Verzeichnis',
+    'Symlink inside an upload directory' => 'Symlink in einem Upload-Verzeichnis',
+    'The pcntl extension is missing' => 'Die Erweiterung pcntl fehlt',
+    'Tracked file differs from the commit' => 'Versionierte Datei weicht vom Commit ab',
+    'Tracked file is missing' => 'Versionierte Datei fehlt',
+    'Tracked file was renamed' => 'Versionierte Datei wurde umbenannt',
+    'Unexpected PHP file in the web root' => 'Unerwartete PHP-Datei im Web-Root',
+    'Untracked executable file in the repository' => 'Nicht versionierte ausführbare Datei im Repository',
+    'Untracked file in the repository' => 'Nicht versionierte Datei im Repository',
+    'Variable variables with escaped names' => 'Variable Variablen mit maskierten Namen',
+    'Web server config injects code before every request' => 'Webserver-Konfiguration schleust vor jeder Anfrage Code ein',
+    'World-writable file in the web root' => 'Weltweit beschreibbare Datei im Web-Root',
+];

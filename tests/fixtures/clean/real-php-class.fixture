@@ -1,0 +1,72 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Enums;
+
+/**
+ * Fixed roles with weights. One user = one role.
+ * Panel access is the admin level (weight >= config('app.roles.panel_access_min_weight')).
+ */
+enum Role: string
+{
+    case Root = 'Root';
+    case Admin = 'Admin';
+    case Manager = 'Manager';
+    case ContentEditor = 'ContentEditor';
+    case UserPlus = 'UserPlus';
+    case User = 'User';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Root => 'Root',
+            self::Admin => 'Admin',
+            self::Manager => 'Manager',
+            self::ContentEditor => 'Content Editor',
+            self::UserPlus => 'User Plus',
+            self::User => 'User',
+        };
+    }
+
+    public function weight(): int
+    {
+        return match ($this) {
+            self::Root => 100,
+            self::Admin => 80,
+            self::Manager => 50,
+            self::ContentEditor => 40,
+            self::UserPlus => 20,
+            self::User => 10,
+        };
+    }
+
+    /**
+     * Whether the role grants access to the Filament panel (admin level).
+     */
+    public function canAccessPanel(): bool
+    {
+        return $this->weight() >= (int) config('app.roles.panel_access_min_weight', 40);
+    }
+
+    /**
+     * Root is the super-admin (bypasses gates through Gate::before).
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this === self::Root;
+    }
+
+    /**
+     * Admin-level roles (they can access the panel).
+     *
+     * @return list<self>
+     */
+    public static function panelRoles(): array
+    {
+        return array_values(array_filter(
+            self::cases(),
+            static fn (self $role): bool => $role->canAccessPanel(),
+        ));
+    }
+}

@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'A heuristics rule was rejected' => 'Een heuristische regel is afgewezen',
+    'A scanner did not complete its pass' => 'Een scanner heeft zijn run niet voltooid',
+    'Application key is missing' => 'Applicatiesleutel ontbreekt',
+    'Code hidden past __halt_compiler' => 'Code verborgen na __halt_compiler',
+    'Code included from a temporary stream' => 'Code ingeladen vanuit een tijdelijke stream',
+    'Compressed payload unpacked at runtime' => 'Gecomprimeerde payload wordt tijdens runtime uitgepakt',
+    'Dangerous PHP setting' => 'Gevaarlijke PHP-instelling',
+    'Debug mode is on in production' => 'Debugmodus staat aan in productie',
+    'Decoded payload passed to eval' => 'Gedecodeerde payload doorgegeven aan eval',
+    'Environment file inside the web root' => 'Omgevingsbestand in de webroot',
+    'Executable file in an upload directory' => 'Uitvoerbaar bestand in een uploadmap',
+    'File appeared since the baseline' => 'Bestand verschenen sinds de baseline',
+    'File changed since the baseline' => 'Bestand gewijzigd sinds de baseline',
+    'File disappeared since the baseline' => 'Bestand verdwenen sinds de baseline',
+    'File too large to inspect' => 'Bestand te groot om te inspecteren',
+    'Function name assembled from concatenation' => 'Functienaam samengesteld uit aaneenschakeling',
+    'Git baseline is unavailable' => 'Git-baseline is niet beschikbaar',
+    'MAGICK_TIME_LIMIT is set' => 'MAGICK_TIME_LIMIT is ingesteld',
+    'No baseline snapshot for this zone' => 'Geen baseline-snapshot voor deze zone',
+    'PHP code inside a binary file' => 'PHP-code in een binair bestand',
+    'Server config file in an upload directory' => 'Serverconfiguratiebestand in een uploadmap',
+    'Symlink inside an upload directory' => 'Symlink in een uploadmap',
+    'The pcntl extension is missing' => 'De extensie pcntl ontbreekt',
+    'Tracked file differs from the commit' => 'Gevolgd bestand wijkt af van de commit',
+    'Tracked file is missing' => 'Gevolgd bestand ontbreekt',
+    'Tracked file was renamed' => 'Gevolgd bestand is hernoemd',
+    'Unexpected PHP file in the web root' => 'Onverwacht PHP-bestand in de webroot',
+    'Untracked executable file in the repository' => 'Niet-gevolgd uitvoerbaar bestand in de repository',
+    'Untracked file in the repository' => 'Niet-gevolgd bestand in de repository',
+    'Variable variables with escaped names' => 'Variabele variabelen met geëscapete namen',
+    'Web server config injects code before every request' => 'Webserverconfiguratie injecteert code vóór elk verzoek',
+    'World-writable file in the web root' => 'Voor iedereen beschrijfbaar bestand in de webroot',
+];

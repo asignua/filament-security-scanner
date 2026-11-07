@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'A heuristics rule was rejected' => 'Bir sezgisel kural reddedildi',
+    'A scanner did not complete its pass' => 'Bir tarayıcı geçişini tamamlayamadı',
+    'Application key is missing' => 'Uygulama anahtarı eksik',
+    'Code hidden past __halt_compiler' => '__halt_compiler sonrasına gizlenmiş kod',
+    'Code included from a temporary stream' => 'Geçici bir akıştan eklenen kod',
+    'Compressed payload unpacked at runtime' => 'Çalışma zamanında açılan sıkıştırılmış yük',
+    'Dangerous PHP setting' => 'Tehlikeli PHP ayarı',
+    'Debug mode is on in production' => 'Üretimde hata ayıklama modu açık',
+    'Decoded payload passed to eval' => 'Çözülmüş yük eval\'e aktarıldı',
+    'Environment file inside the web root' => 'Web kök dizininde ortam dosyası',
+    'Executable file in an upload directory' => 'Yükleme dizininde çalıştırılabilir dosya',
+    'File appeared since the baseline' => 'Temel çizgiden bu yana dosya göründü',
+    'File changed since the baseline' => 'Temel çizgiden bu yana dosya değişti',
+    'File disappeared since the baseline' => 'Temel çizgiden bu yana dosya kayboldu',
+    'File too large to inspect' => 'Dosya incelenemeyecek kadar büyük',
+    'Function name assembled from concatenation' => 'Birleştirmeyle oluşturulmuş fonksiyon adı',
+    'Git baseline is unavailable' => 'Git temel çizgisi kullanılamıyor',
+    'MAGICK_TIME_LIMIT is set' => 'MAGICK_TIME_LIMIT ayarlanmış',
+    'No baseline snapshot for this zone' => 'Bu bölge için temel çizgi anlık görüntüsü yok',
+    'PHP code inside a binary file' => 'İkili dosyanın içinde PHP kodu',
+    'Server config file in an upload directory' => 'Yükleme dizininde sunucu yapılandırma dosyası',
+    'Symlink inside an upload directory' => 'Yükleme dizininde Symlink',
+    'The pcntl extension is missing' => 'pcntl eklentisi eksik',
+    'Tracked file differs from the commit' => 'İzlenen dosya commit\'ten farklı',
+    'Tracked file is missing' => 'İzlenen dosya eksik',
+    'Tracked file was renamed' => 'İzlenen dosyanın adı değiştirilmiş',
+    'Unexpected PHP file in the web root' => 'Web kök dizininde beklenmeyen PHP dosyası',
+    'Untracked executable file in the repository' => 'Depoda izlenmeyen çalıştırılabilir dosya',
+    'Untracked file in the repository' => 'Depoda izlenmeyen dosya',
+    'Variable variables with escaped names' => 'Kaçış karakterli adlara sahip değişken değişkenler',
+    'Web server config injects code before every request' => 'Web sunucusu yapılandırması her istekten önce kod enjekte ediyor',
+    'World-writable file in the web root' => 'Web kök dizininde herkesin yazabildiği dosya',
+];

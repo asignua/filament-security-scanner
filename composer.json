@@ -1,7 +1,15 @@
 {
     "name": "asignua/filament-security-scanner",
-    "description": "TODO: one-sentence description of Security Scanner for Filament.",
-    "keywords": ["filament", "filament-plugin", "laravel"],
+    "description": "Detection (not protection) of intrusion traces for Filament: web shells and polyglots in uploads, drift from git and a vendor hash snapshot, obfuscated PHP, quarantine and alerts.",
+    "keywords": [
+        "filament",
+        "filament-plugin",
+        "laravel",
+        "security",
+        "intrusion-detection",
+        "webshell",
+        "malware-scanner"
+    ],
     "homepage": "https://github.com/asignua/filament-security-scanner",
     "support": {
         "issues": "https://github.com/asignua/filament-security-scanner/issues",
@@ -18,14 +26,16 @@
     "require": {
         "php": "^8.3",
         "filament/filament": "^5.0",
+        "guzzlehttp/guzzle": "^7.8.2|^8.0",
         "illuminate/contracts": "^12.0|^13.0",
-        "spatie/laravel-package-tools": "^1.16"
+        "illuminate/support": "^12.0|^13.0"
     },
     "require-dev": {
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.18",
         "orchestra/testbench": "^10.0|^11.0",
-        "phpunit/phpunit": "^11.5|^12.0|^13.0"
+        "phpunit/phpunit": "^11.5|^12.0|^13.0",
+        "spatie/laravel-medialibrary": "^11.0"
     },
     "autoload": {
         "psr-4": {
@@ -36,7 +46,8 @@
         "psr-4": {
             "Asignua\\FilamentSecurityScanner\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/",
-            "Workbench\\Database\\Factories\\": "workbench/database/factories/"
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
         }
     },
     "extra": {
@@ -58,5 +69,11 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "conflict": {
+        "asign/eegnith-security-scanner": "*"
+    },
+    "suggest": {
+        "spatie/laravel-medialibrary": "Checks a file synchronously the moment it is added to the media library (MediaHasBeenAddedEvent)."
+    }
 }
