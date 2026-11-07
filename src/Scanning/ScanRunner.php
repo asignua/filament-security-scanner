@@ -460,7 +460,7 @@ final class ScanRunner
             $bytes = (string) fread($handle, $budget);
             fclose($handle);
 
-            if (!hash_equals((string) $finding->content_hash, hash('sha256', $bytes))) {
+            if (!hash_equals(rtrim((string) $finding->content_hash), hash('sha256', $bytes))) {
                 continue;
             }
 

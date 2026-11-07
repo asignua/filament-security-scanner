@@ -101,7 +101,8 @@ return new class extends Migration
                 $table->json('evidence')->nullable();
                 $table->unsignedBigInteger('size')->nullable();
                 $table->unsignedBigInteger('file_mtime')->nullable();
-                $table->char('content_hash', 64)->nullable();
+                // string, not char: PostgreSQL pads char(n) with blanks, and xxh128 is only 32 chars.
+                $table->string('content_hash', 64)->nullable();
                 $table->string('mime', 128)->nullable();
 
                 $table->string('status', 16)->default('new');
@@ -142,7 +143,7 @@ return new class extends Migration
                 $table->string('zone', 64)->index();
                 $table->string('path', 400);
                 $table->char('path_hash', 64);
-                $table->char('content_hash', 64);
+                $table->string('content_hash', 64);
                 // The algorithm is in the row: changing it must force a RE-TAKE of the snapshot rather
                 // than report 16 thousand "modifications".
                 $table->string('hash_algo', 16)->default('xxh128');

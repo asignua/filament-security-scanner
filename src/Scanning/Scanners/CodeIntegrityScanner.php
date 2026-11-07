@@ -184,6 +184,8 @@ final class CodeIntegrityScanner implements Scanner
         $stored = SecurityBaselineEntry::query()
             ->where('snapshot_id', $snapshot)
             ->pluck('content_hash', 'path')
+            // PostgreSQL pads `char(n)` with spaces on read; a hash never contains blanks.
+            ->map(static fn (mixed $hash): string => rtrim((string) $hash))
             ->all();
 
         $algo = (string) (SecurityBaselineEntry::query()
