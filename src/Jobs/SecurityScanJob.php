@@ -68,7 +68,7 @@ final class SecurityScanJob implements ShouldQueue
             $this->notify(
                 Notification::make()
                     ->title(__('security-scanner::ui.Command failed'))
-                    ->body($e->getMessage())
+                    ->body(e($e->getMessage()))
                     ->danger(),
             );
 

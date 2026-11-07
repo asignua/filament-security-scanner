@@ -157,7 +157,7 @@ class SecurityFindingsTable
                                 Quarantine::move($r, auto: false, byLabel: self::actor(), byId: self::actorId());
                                 Notification::make()->title(__('security-scanner::ui.Quarantined'))->success()->send();
                             } catch (\Throwable $e) {
-                                Notification::make()->title(__('security-scanner::ui.Quarantine failed'))->body($e->getMessage())->danger()->send();
+                                Notification::make()->title(__('security-scanner::ui.Quarantine failed'))->body(e($e->getMessage()))->danger()->send();
                             }
                         }),
 
@@ -180,7 +180,7 @@ class SecurityFindingsTable
                                 Quarantine::restore($r, byLabel: self::actor(), byId: self::actorId());
                                 Notification::make()->title(__('security-scanner::ui.Restored'))->success()->send();
                             } catch (\Throwable $e) {
-                                Notification::make()->title(__('security-scanner::ui.Restore failed'))->body($e->getMessage())->danger()->send();
+                                Notification::make()->title(__('security-scanner::ui.Restore failed'))->body(e($e->getMessage()))->danger()->send();
                             }
                         }),
                 ]),

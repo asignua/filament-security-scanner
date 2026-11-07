@@ -209,8 +209,10 @@ final class SecurityAlerts
 
         $notification = Notification::make()
             ->title($title)
+            // Filament renders a notification body as HTML; the path is a file name
+            // somebody else chose.
             ->body($top instanceof SecurityFinding
-                ? sprintf('%s — %s', SecurityPresenter::severityLabel($top->severity->value), (string) $top->path)
+                ? e(sprintf('%s — %s', SecurityPresenter::severityLabel($top->severity->value), (string) $top->path))
                 : '')
             ->actions([
                 Action::make('open')
