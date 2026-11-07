@@ -21,6 +21,18 @@ unchanged, so stored findings, quarantine copies and settings keep working. The 
   open "heuristics registry rejected a rule" finding depends on that text, so such a finding may reappear as new once.
 - Russian translations were dropped.
 
+### Fixed
+
+- A negative file mtime/size (`touch -d 1960-01-01`) overflowed the unsigned columns on MariaDB (error 1264) and lost the
+  finding; values are clamped (findings and baseline). A baseline batch that fails is retried row by row, a failed
+  re-verification update is reported instead of aborting the run.
+- A zone outside `base_path()` is refused with a visible issue (it used to be scanned under pseudo-relative paths, and its
+  findings were closed by re-verification). Documented under README Limits.
+- `obf.oversized-unreadable` (no content hash) is re-checked by size and stays open while the file is still too large.
+- Quarantine (manual, automatic and restore) is contained by the zone instead of the project root, so a symlinked `storage`
+  (Deployer) works; symlinks inside the zone are still refused. Auto-quarantine failures and refusals are listed in the run's issues.
+- The legacy `ee.` title migration runs in PHP in chunks (no SQL `CONCAT`, which needs SQLite 3.44+) and is a no-op without rows.
+
 ### Changed
 
 - PHP `^8.3` and Laravel 12 or 13 (the predecessor required PHP 8.4 and Laravel 13).

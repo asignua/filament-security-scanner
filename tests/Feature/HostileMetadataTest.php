@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Asignua\FilamentSecurityScanner\Tests\Feature;
 
 use Asignua\FilamentSecurityScanner\Enums\SecuritySeverity;
+use Asignua\FilamentSecurityScanner\Enums\SecurityZoneKind;
 use Asignua\FilamentSecurityScanner\Models\SecurityBaselineEntry;
 use Asignua\FilamentSecurityScanner\Models\SecurityFinding;
 use Asignua\FilamentSecurityScanner\Scanning\BaselineSnapshot;
@@ -13,7 +14,6 @@ use Asignua\FilamentSecurityScanner\Scanning\Finding;
 use Asignua\FilamentSecurityScanner\Scanning\ScanContext;
 use Asignua\FilamentSecurityScanner\Scanning\ScanRunner;
 use Asignua\FilamentSecurityScanner\Scanning\Zone;
-use Asignua\FilamentSecurityScanner\Enums\SecurityZoneKind;
 use Asignua\FilamentSecurityScanner\Tests\TestCase;
 use Illuminate\Support\Facades\File;
 

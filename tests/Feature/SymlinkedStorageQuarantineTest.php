@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Asignua\FilamentSecurityScanner\Tests\Feature;
 
 use Asignua\FilamentSecurityScanner\Enums\SecurityFindingStatus;
-use Asignua\FilamentSecurityScanner\Models\SecurityFinding;
-use Asignua\FilamentSecurityScanner\Models\SecurityScan;
 use Asignua\FilamentSecurityScanner\Enums\SecuritySeverity;
 use Asignua\FilamentSecurityScanner\Enums\SecurityZoneKind;
+use Asignua\FilamentSecurityScanner\Models\SecurityFinding;
+use Asignua\FilamentSecurityScanner\Models\SecurityScan;
 use Asignua\FilamentSecurityScanner\Scanning\Finding;
 use Asignua\FilamentSecurityScanner\Scanning\Quarantine;
 use Asignua\FilamentSecurityScanner\Scanning\Rule;

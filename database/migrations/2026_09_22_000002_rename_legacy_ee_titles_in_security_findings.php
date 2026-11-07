@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Legacy finding titles from before the scanner became a standalone package.
@@ -15,8 +16,8 @@ use Illuminate\Support\Facades\DB;
  * only bumps counters), so the only way is to rewrite the data. The key text
  * after the prefix is the same, so replacing the prefix is enough.
  *
- * Hosts that never had the previous host-integrated version of the scanner have no such rows —
- * the migration is a no-op for them. Idempotent: a second run will not find `ee.%`.
+ * Only for hosts upgrading from the private package; on any other install there are no such rows
+ * and the migration is a no-op. It is done in PHP so it does not depend on the database dialect. Idempotent: a second run will not find `ee.%`.
  */
 return new class extends Migration
 {
@@ -24,9 +25,22 @@ return new class extends Migration
     {
         $table = (string) config('security-scanner.tables.prefix', '').'security_findings';
 
+        if (!Schema::hasTable($table)) {
+            return;
+        }
+
+        // In PHP, chunked: `CONCAT` does not exist in SQLite before 3.44 (`||` is not MySQL),
+        // and a fresh install has no such rows at all, so this is a cheap no-op there.
         DB::table($table)
             ->where('title', 'like', 'ee.%')
-            ->update(['title' => DB::raw("CONCAT('security-scanner::rules.', SUBSTRING(title, 4))")]);
+            ->orderBy('id')
+            ->chunkById(500, function ($rows) use ($table): void {
+                foreach ($rows as $row) {
+                    DB::table($table)
+                        ->where('id', $row->id)
+                        ->update(['title' => 'security-scanner::rules.'.substr((string) $row->title, 3)]);
+                }
+            });
     }
 
     public function down(): void
