@@ -95,6 +95,10 @@ final class Quarantine
             return false;
         }
 
+        if (PathNormalizer::hasTraversal($finding->path)) {
+            return false;
+        }
+
         if (is_link($absolutePath) || !is_file($absolutePath)) {
             return false;
         }
@@ -140,6 +144,8 @@ final class Quarantine
             throw new RuntimeException(self::nonUtf8Message());
         }
 
+        $zoneReal = self::zoneRoot($finding);
+
         if (is_link($source) || !is_file($source)) {
             throw new RuntimeException(sprintf('The file does not exist or is a symlink: %s', (string) $finding->path));
         }
@@ -150,6 +156,8 @@ final class Quarantine
         if ($real === false || $realBase === false || !str_starts_with($real, rtrim($realBase, '/').'/')) {
             throw new RuntimeException('The path escapes the project');
         }
+
+        self::assertSourceInZone($source, $real, $zoneReal);
 
         if (!mb_check_encoding($real, 'UTF-8')) {
             throw new RuntimeException(self::nonUtf8Message());
@@ -201,6 +209,10 @@ final class Quarantine
             throw new RuntimeException('Failed to write the quarantine meta');
         }
 
+        // Re-checked IMMEDIATELY before the move: a directory swapped for a symlink
+        // since the first check must not redirect the rename.
+        self::assertSourceInZone($source, $real, $zoneReal);
+
         if (!@rename($real, $target)) {
             throw new RuntimeException(sprintf('Failed to move %s', (string) $finding->path));
         }
@@ -249,6 +261,8 @@ final class Quarantine
             throw new RuntimeException('The path escapes the project');
         }
 
+        $zoneReal = self::zoneRoot($finding);
+
         if (file_exists($target)) {
             throw new RuntimeException(sprintf('The original path is already taken: %s', (string) $finding->path));
         }
@@ -266,7 +280,15 @@ final class Quarantine
             throw new RuntimeException('Failed to create the destination directory');
         }
 
-        if (!@rename($source, $target)) {
+        // Right before the move: the destination directory (now created, if it
+        // was missing) must resolve INSIDE the zone, not merely inside the project.
+        $targetDirReal = realpath($targetDir);
+
+        if ($targetDirReal === false || !self::isWithin($targetDirReal, $zoneReal)) {
+            throw new RuntimeException('The destination path escapes the zone');
+        }
+
+        if (is_link($target) || !@rename($source, $target)) {
             throw new RuntimeException('Failed to restore the file');
         }
 
@@ -293,6 +315,52 @@ final class Quarantine
         $finding->notified_channels = null;
         $finding->notified_at = null;
         $finding->save();
+    }
+
+    /**
+     * Real path of the zone root the finding's file must stay in. A path with a
+     * `..` segment, or one that lies in no zone, is refused: the stored path is a
+     * DB value, not trusted input.
+     */
+    private static function zoneRoot(SecurityFinding $finding): string
+    {
+        $path = (string) $finding->path;
+
+        if (PathNormalizer::hasTraversal($path) || PathNormalizer::hasTraversal((string) $finding->quarantine_path)) {
+            throw new RuntimeException('The path escapes the zone');
+        }
+
+        $zone = Zones::forPath($path, $finding->zone);
+        $real = $zone instanceof Zone ? realpath($zone->absolutePath) : false;
+
+        if ($real === false) {
+            throw new RuntimeException('The path is not inside a scanned zone');
+        }
+
+        return rtrim($real, '/');
+    }
+
+    /**
+     * The file AND its parent directory must resolve inside the zone root.
+     */
+    private static function assertSourceInZone(string $source, string $real, string $zoneReal): void
+    {
+        $parent = realpath(dirname($source));
+
+        if (!self::isWithin($real, $zoneReal) || $parent === false || !self::isWithin($parent, $zoneReal)) {
+            throw new RuntimeException('The path escapes the zone');
+        }
+
+        if (realpath($source) !== $real) {
+            throw new RuntimeException('The path changed while being checked');
+        }
+    }
+
+    private static function isWithin(string $path, string $root): bool
+    {
+        $path = rtrim($path, '/');
+
+        return $path === $root || str_starts_with($path, $root.'/');
     }
 
     private static function nonUtf8Message(): string

@@ -101,10 +101,13 @@ final class PathNormalizer
      */
     public static function relative(string $path, ?string $base = null): string
     {
-        $path = str_replace('\\', '/', $path);
+        // A backslash is a separator only where the OS says so. On POSIX it is an
+        // ordinary file name character: turning `..\..\public\index.php` (ONE file
+        // name) into `../../public/index.php` made a planted file name a traversal.
+        $path = self::toSlashes($path);
 
         if ($base !== null) {
-            $base = rtrim(str_replace('\\', '/', $base), '/');
+            $base = rtrim(self::toSlashes($base), '/');
 
             if ($base !== '' && str_starts_with($path, $base.'/')) {
                 $path = substr($path, strlen($base) + 1);
@@ -116,6 +119,26 @@ final class PathNormalizer
         $path = ltrim($path, '/');
 
         return rtrim($path, '/');
+    }
+
+    private static function toSlashes(string $path): string
+    {
+        return DIRECTORY_SEPARATOR === '\\' ? str_replace('\\', '/', $path) : $path;
+    }
+
+    /**
+     * Whether a stored relative path has a `.`/`..` or empty-after-trim segment that
+     * could leave the directory it is joined to. Segments are split on `/` only.
+     */
+    public static function hasTraversal(string $path): bool
+    {
+        foreach (explode('/', $path) as $segment) {
+            if ($segment === '..') {
+                return true;
+            }
+        }
+
+        return str_contains($path, "\0");
     }
 
     /**

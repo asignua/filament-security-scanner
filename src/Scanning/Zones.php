@@ -154,6 +154,30 @@ final class Zones
         return [$zones, $issues];
     }
 
+    /**
+     * The zone a finding's path belongs to: the named one when it still contains
+     * the path, otherwise any resolved zone that does.
+     */
+    public static function forPath(string $relativePath, ?string $name): ?Zone
+    {
+        [$zones] = self::resolve();
+        $base = self::base();
+
+        foreach ($zones as $zone) {
+            if ($zone->name === $name && $zone->contains($relativePath, $base)) {
+                return $zone;
+            }
+        }
+
+        foreach ($zones as $zone) {
+            if ($zone->contains($relativePath, $base)) {
+                return $zone;
+            }
+        }
+
+        return null;
+    }
+
     public static function base(): string
     {
         return rtrim(function_exists('base_path') ? base_path() : (string) getcwd(), '/');

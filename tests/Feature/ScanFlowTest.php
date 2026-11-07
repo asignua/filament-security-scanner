@@ -216,4 +216,101 @@ class ScanFlowTest extends TestCase
             $this->assertFileExists($file);
         }
     }
+
+    private function planted(string $name): string
+    {
+        $file = $this->root.'/storage/app/public/uploads/'.$name;
+        file_put_contents($file, '<?php echo "neutralized"; ?>');
+
+        return $file;
+    }
+
+    public function test_a_file_named_with_backslash_dotdot_is_not_a_traversal(): void
+    {
+        $name = '..\\..\\..\\..\\public\\index.php';
+        $this->planted($name);
+        mkdir($this->root.'/public');
+        file_put_contents($this->root.'/public/index.php', '<?php // real front controller');
+        $this->scan();
+
+        $finding = SecurityFinding::query()->where('path', 'like', '%uploads/%')->get()
+            ->first(fn (SecurityFinding $f): bool => str_contains((string) $f->path, '\\'));
+        $this->assertNotNull($finding);
+        $this->assertSame('storage/app/public/uploads/'.$name, $finding->path);
+
+        Quarantine::move($finding, auto: false);
+
+        $this->assertFileExists($this->root.'/public/index.php', 'The real file outside the zone must be untouched.');
+        $this->assertFileDoesNotExist($this->root.'/storage/app/public/uploads/'.$name);
+    }
+
+    public function test_quarantine_refuses_a_stored_path_with_dotdot_segments(): void
+    {
+        mkdir($this->root.'/public');
+        file_put_contents($this->root.'/public/index.php', '<?php // real front controller');
+        $this->scan();
+        $finding = $this->shellFinding();
+        $finding->path = 'storage/app/public/uploads/../../../../public/index.php';
+        $finding->save();
+
+        try {
+            Quarantine::move($finding, auto: false);
+            $this->fail('A traversing path must be refused.');
+        } catch (RuntimeException) {
+            $this->assertFileExists($this->root.'/public/index.php');
+        }
+    }
+
+    public function test_quarantine_refuses_a_directory_symlink_that_leaves_the_zone(): void
+    {
+        mkdir($this->root.'/outside');
+        file_put_contents($this->root.'/outside/x.php', '<?php // elsewhere in the project');
+        symlink($this->root.'/outside', $this->root.'/storage/app/public/uploads/sub');
+        $this->scan();
+        $finding = $this->shellFinding();
+        $finding->path = 'storage/app/public/uploads/sub/x.php';
+        $finding->save();
+
+        try {
+            Quarantine::move($finding, auto: false);
+            $this->fail('A file reached through a symlinked directory outside the zone must be refused.');
+        } catch (RuntimeException) {
+            $this->assertFileExists($this->root.'/outside/x.php');
+        }
+    }
+
+    public function test_restore_refuses_a_destination_directory_swapped_for_a_symlink_out_of_the_zone(): void
+    {
+        $this->scan();
+        $finding = $this->shellFinding();
+        Quarantine::move($finding, auto: false);
+        mkdir($this->root.'/outside');
+        File::deleteDirectory($this->root.'/storage/app/public/uploads');
+        symlink($this->root.'/outside', $this->root.'/storage/app/public/uploads');
+
+        try {
+            Quarantine::restore($finding->refresh());
+            $this->fail('A restore through a symlink leaving the zone must be refused.');
+        } catch (RuntimeException) {
+            $this->assertFileDoesNotExist($this->root.'/outside/shell.php');
+        }
+    }
+
+    public function test_restore_refuses_a_stored_path_that_climbs_out_of_the_zone(): void
+    {
+        $this->scan();
+        $finding = $this->shellFinding();
+        Quarantine::move($finding, auto: false);
+        mkdir($this->root.'/public');
+        $finding->refresh();
+        $finding->path = 'storage/app/public/uploads/../../../../public/shell.php';
+        $finding->save();
+
+        try {
+            Quarantine::restore($finding);
+            $this->fail('A restore target outside the zone must be refused.');
+        } catch (RuntimeException) {
+            $this->assertFileDoesNotExist($this->root.'/public/shell.php');
+        }
+    }
 }
