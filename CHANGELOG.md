@@ -55,9 +55,28 @@ unchanged, so stored findings, quarantine copies and settings keep working. The 
 - `webroot.unexpected-php` matches `.php .phtml .phar .pht .php3-8` in any case (`.PHP`); `public/index.php` stays the only
   exemption (case-sensitive).
 - The findings list has an empty state that tells the admin to run `php artisan security:scan`.
+- **A file that cannot be stat-ed or opened no longer crashes a scanner.** `getSize()/getMTime()/getPerms()` throw despite `@`:
+  a directory with mode `0444` lists but does not stat, which crashed the uploads, obfuscation and hygiene scanners (hygiene
+  died before reporting any degradation and later zones went unscanned). The file is skipped, the scanner is marked
+  incomplete and the run continues. An existing file that cannot be opened (`chmod 000`) keeps its content finding open
+  instead of closing it as gone. The baseline snapshot tolerates the same.
+- **`git status` no longer runs clean/smudge filters.** The config is read first (all scopes, `include.path` followed),
+  every flagged filter is emptied and made non-required for the run, and the value check is anchored (`clean = true && cmd`
+  used to pass). Exact git-lfs filters are left intact. New rule `code.git-executable-config` reports each such key.
+- **Nested repositories are expanded.** A nested repository (or one that ignores itself) shows up in `git status` as one
+  `dir/` entry; its PHP files are now reported individually as untracked executables. `resources` joined the default
+  `git.ignored_php_paths`.
+- **Staged additions (`A`), copies (`C`) and unmerged paths (`U`)** map to rules. `security:baseline` records the git `HEAD`
+  and a scan raises `code.git-head-moved` while `HEAD` differs from it (a commit used to make everything clean). The deploy
+  must run `security:baseline`.
+- **`public/storage` is allowlisted only as the storage symlink.** A link to anything else (for example `..`, which exposes
+  `.env`) is scanned and reported as `hygiene.foreign-storage-link`.
+- A file named `.php` (or `.php.jpg`) now counts as PHP-executable.
 
 ### Added
 
+- New translation keys (all 10 locales) for `code.git-executable-config`, `code.git-head-moved` and
+  `hygiene.foreign-storage-link`.
 - New rules `code.ignored-php-file` (PHP hidden from git by a nested `.gitignore`, directories in
   `security-scanner.git.ignored_php_paths`) and `code.git-index-flag` (`assume-unchanged` / `skip-worktree`). Sites with
   legitimately ignored PHP files in those directories should allowlist them. New translation keys exist in all 10 locales.

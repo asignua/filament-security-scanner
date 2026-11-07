@@ -39,4 +39,5 @@ return [
     'Tracked file hidden from git status' => 'İzlenen dosya git status\'tan gizlenmiş',
     'Git config makes git run a command' => 'Git yapılandırması git\'in bir komut çalıştırmasına neden olur',
     'Git HEAD moved since the last baseline' => 'Git HEAD son temel çizgiden beri değişti',
+    'Storage link in the web root points elsewhere' => 'Web kökündeki storage bağlantısı başka yere işaret ediyor',
 ];

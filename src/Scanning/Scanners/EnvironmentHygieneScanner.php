@@ -145,6 +145,14 @@ final class EnvironmentHygieneScanner implements Scanner
                 continue;
             }
 
+            // The allowlist trusts `storage` only while it links to the public storage
+            // directory; any other target hands that directory's contents to the web.
+            if (ScanContext::isForeignStorageLink($zone->absolutePath.'/storage')) {
+                yield $this->make($context, 'hygiene.foreign-storage-link', PathNormalizer::relative($zone->absolutePath.'/storage', $context->base), [
+                    'target' => (string) @readlink($zone->absolutePath.'/storage'),
+                ], $zone);
+            }
+
             // A web server config in the webroot that loads code BEFORE every
             // request is a classic way to hide a shell so that no file
             // looks executable.

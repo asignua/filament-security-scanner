@@ -337,6 +337,17 @@ return [
             'matcher' => ['type' => 'none'],
         ],
         [
+            // `public/storage` is allowlisted as the storage symlink; one that points
+            // anywhere else (`..` exposes .env) is not.
+            'id' => 'hygiene.foreign-storage-link',
+            'scanner' => 'hygiene',
+            'severity' => SecuritySeverity::Critical->value,
+            'applies_to' => [SecurityZoneKind::Webroot->value],
+            'weight' => 10,
+            'message' => 'security-scanner::rules.Storage link in the web root points elsewhere',
+            'matcher' => ['type' => 'none'],
+        ],
+        [
             'id' => 'hygiene.prepend-in-webroot',
             'scanner' => 'hygiene',
             'severity' => SecuritySeverity::Critical->value,

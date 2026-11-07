@@ -39,4 +39,5 @@ return [
     'Tracked file hidden from git status' => 'File tracciato nascosto a git status',
     'Git config makes git run a command' => 'La configurazione di git fa eseguire un comando a git',
     'Git HEAD moved since the last baseline' => 'Git HEAD si è spostato dall\'ultima baseline',
+    'Storage link in the web root points elsewhere' => 'Il link storage nella root web punta altrove',
 ];

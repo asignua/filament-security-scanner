@@ -39,4 +39,5 @@ return [
     'Tracked file hidden from git status' => 'Gevolgd bestand verborgen voor git status',
     'Git config makes git run a command' => 'Git-configuratie laat git een opdracht uitvoeren',
     'Git HEAD moved since the last baseline' => 'Git HEAD is verplaatst sinds de laatste baseline',
+    'Storage link in the web root points elsewhere' => 'De storage-link in de webroot wijst ergens anders heen',
 ];

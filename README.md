@@ -91,6 +91,10 @@ php artisan security:baseline --zone=vendor
 
 Until the first snapshot exists the scanner reports "no baseline snapshot for this zone".
 
+The same command records the git `HEAD` of the deploy. A commit makes `git status` clean again, so a `HEAD` that differs
+from the recorded one is reported as `code.git-head-moved` until the baseline is taken again: **the deploy must run
+`security:baseline`**, otherwise every commit on the server raises that finding.
+
 ### Schedule
 
 The package registers its own schedule; do not add it again. You only need the Laravel scheduler running
@@ -222,6 +226,20 @@ They have different goals; the facts about this package:
 - Rules are data you can extend or switch off per application, with a `security:rules` gate that runs them over samples.
 - Notifications are **per channel** (panel, e-mail, Telegram), each with its own threshold, throttle and stamp.
 - It never downloads signatures from the network, and it has no lockdown mode and no activity log.
+
+## Limits
+
+What the scanner deliberately does not cover:
+
+- `bootstrap/cache/*.php` (compiled caches) and `storage/framework/views` (compiled Blade) are allowlisted: they change on
+  every request and every deploy. A shell written there is **not** reported. Keep those directories non-writable by anything
+  but the application and rebuild them on deploy (`php artisan optimize:clear` / `optimize`).
+- `public/storage` is trusted only while it is a symlink to the public storage directory (`filesystems.disks.public.root`);
+  any other target is reported as `hygiene.foreign-storage-link`.
+- Filters of the git config are switched off while the scanner runs git, except exact git-lfs commands; anything else is
+  reported as `code.git-executable-config`.
+- The scanner is detection, not protection: it sees what the web user can read, runs as that user, and a root-level attacker
+  can switch it off.
 
 ## Gotchas
 

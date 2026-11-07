@@ -109,11 +109,35 @@ final readonly class ScanContext
     {
         foreach ($this->allowlist as $pattern) {
             if (PathNormalizer::matchesGlob($relativePath, $pattern)) {
+                // `public/storage` is allowlisted as THE storage symlink, not as
+                // "whatever sits under that name": a link to `..` exposes `.env`.
+                if (self::isForeignStorageLink(rtrim($this->base, '/').'/'.PathNormalizer::relative($relativePath))) {
+                    continue;
+                }
+
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Whether the path is a symlink named `storage` that does NOT point at the
+     * public storage directory. Anything else (a plain file or directory) is not
+     * this check's business.
+     */
+    public static function isForeignStorageLink(string $absolute): bool
+    {
+        if (basename($absolute) !== 'storage' || !is_link($absolute)) {
+            return false;
+        }
+
+        $expected = (string) config('filesystems.disks.public.root', '');
+        $expected = realpath($expected !== '' ? $expected : storage_path('app/public'));
+        $target = realpath($absolute);
+
+        return $expected === false || $target === false || $target !== $expected;
     }
 
     public function covers(string $relativePath): bool

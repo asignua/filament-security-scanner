@@ -39,4 +39,5 @@ return [
     'Tracked file hidden from git status' => 'Tracked file hidden from git status',
     'Git config makes git run a command' => 'Git config makes git run a command',
     'Git HEAD moved since the last baseline' => 'Git HEAD moved since the last baseline',
+    'Storage link in the web root points elsewhere' => 'Storage link in the web root points elsewhere',
 ];
