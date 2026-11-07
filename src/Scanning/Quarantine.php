@@ -337,6 +337,13 @@ final class Quarantine
             throw new RuntimeException('The path is not inside a scanned zone');
         }
 
+        // The kind of the zone the path REALLY lies in decides, not the `zone_kind`
+        // column of the row: a tampered row must not widen what may be moved. Used
+        // by move() and restore() alike.
+        if (!$zone->kind->allowsManualQuarantine()) {
+            throw new RuntimeException((string) __('security-scanner::ui.Quarantine is available only for upload zones'));
+        }
+
         return rtrim($real, '/');
     }
 
