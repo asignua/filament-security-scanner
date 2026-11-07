@@ -76,4 +76,5 @@ return [
     'Web root' => 'Web root',
     'Zone' => 'Zone',
     '…and :count more — see the panel' => '…and :count more — see the panel',
+    'Quarantine refused: the file name is not valid UTF-8. The finding stays open; handle the file by hand.' => 'Quarantine refused: the file name is not valid UTF-8. The finding stays open; handle the file by hand.',
 ];

@@ -131,6 +131,15 @@ final class Quarantine
         $base = Zones::base();
         $source = rtrim($base, '/').'/'.(string) $finding->path;
 
+        // A name that is not valid UTF-8 cannot be stored faithfully: the DB would
+        // keep a U+FFFD-mangled copy and restore() would put back a DIFFERENT file
+        // name. The row keeps an escaped path (`\xFF`) that no longer opens the
+        // file, so such a name is refused up front and the finding stays open.
+        if (!mb_check_encoding((string) $finding->path, 'UTF-8')
+            || (!is_file($source) && PathNormalizer::wasAltered((string) $finding->path))) {
+            throw new RuntimeException(self::nonUtf8Message());
+        }
+
         if (is_link($source) || !is_file($source)) {
             throw new RuntimeException(sprintf('The file does not exist or is a symlink: %s', (string) $finding->path));
         }
@@ -140,6 +149,10 @@ final class Quarantine
 
         if ($real === false || $realBase === false || !str_starts_with($real, rtrim($realBase, '/').'/')) {
             throw new RuntimeException('The path escapes the project');
+        }
+
+        if (!mb_check_encoding($real, 'UTF-8')) {
+            throw new RuntimeException(self::nonUtf8Message());
         }
 
         $dir = self::root().'/'.now()->format('Y/m').'/'.$finding->ulid;
@@ -280,6 +293,11 @@ final class Quarantine
         $finding->notified_channels = null;
         $finding->notified_at = null;
         $finding->save();
+    }
+
+    private static function nonUtf8Message(): string
+    {
+        return (string) __('security-scanner::ui.Quarantine refused: the file name is not valid UTF-8. The finding stays open; handle the file by hand.');
     }
 
     public static function root(): string

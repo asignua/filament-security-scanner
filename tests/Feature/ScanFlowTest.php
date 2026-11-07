@@ -176,4 +176,44 @@ class ScanFlowTest extends TestCase
         $this->assertSame(SecurityFindingStatus::New, $finding->fresh()?->status);
         $this->assertNull($finding->fresh()?->notified_at);
     }
+
+    public function test_quarantine_refuses_a_non_utf8_file_name_and_keeps_the_finding_open(): void
+    {
+        $name = "bad\xff.php";
+        $file = $this->root.'/storage/app/public/uploads/'.$name;
+        file_put_contents($file, '<?php echo "neutralized"; ?>');
+        $this->scan();
+
+        $finding = SecurityFinding::query()->where('path', 'like', '%bad%')->firstOrFail();
+
+        try {
+            Quarantine::move($finding, auto: false);
+            $this->fail('A non-UTF-8 name must not be quarantined.');
+        } catch (RuntimeException $e) {
+            $this->assertSame((string) __('security-scanner::ui.Quarantine refused: the file name is not valid UTF-8. The finding stays open; handle the file by hand.'), $e->getMessage());
+        }
+
+        $this->assertFileExists($file);
+        $this->assertSame(SecurityFindingStatus::New, $finding->fresh()?->status);
+        $this->assertNull($finding->fresh()?->quarantine_path);
+    }
+
+    public function test_quarantine_refuses_a_raw_non_utf8_stored_path(): void
+    {
+        $file = $this->root.'/storage/app/public/uploads/raw'."\xe9".'.php';
+        file_put_contents($file, '<?php echo "neutralized"; ?>');
+        $this->scan();
+        $finding = $this->shellFinding();
+        $finding->path = 'storage/app/public/uploads/raw'."\xe9".'.php';
+        $finding->save();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage((string) __('security-scanner::ui.Quarantine refused: the file name is not valid UTF-8. The finding stays open; handle the file by hand.'));
+
+        try {
+            Quarantine::move($finding, auto: false);
+        } finally {
+            $this->assertFileExists($file);
+        }
+    }
 }

@@ -76,4 +76,5 @@ return [
     'Web root' => 'Web kök dizini',
     'Zone' => 'Bölge',
     '…and :count more — see the panel' => '…ve :count tane daha — panele bakın',
+    'Quarantine refused: the file name is not valid UTF-8. The finding stays open; handle the file by hand.' => 'Karantina reddedildi: dosya adı geçerli UTF-8 değil. Bulgu açık kalır; dosyayı elle işleyin.',
 ];
