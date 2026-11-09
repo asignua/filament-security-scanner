@@ -23,6 +23,11 @@ jobs:
           coverage: none
       - run: composer require "illuminate/contracts:${{ matrix.laravel }}" --no-interaction --no-update
       - run: composer update --prefer-dist --no-interaction
+      # The runner's git-lfs package registers a system-wide `filter.lfs.process`; the git
+      # hardening tests bring their own fake git-lfs and skip themselves while it is there.
+      - run: |
+          sudo git config --system --remove-section filter.lfs || true
+          git config --global --remove-section filter.lfs || true
       - run: vendor/bin/phpunit
 
   static:

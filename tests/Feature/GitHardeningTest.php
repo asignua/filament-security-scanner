@@ -376,6 +376,17 @@ class GitHardeningTest extends TestCase
      */
     private function fakeLfs(string $marker): string
     {
+        // A git-lfs installed system-wide or per user (the GitHub runner image does it in
+        // /etc/gitconfig) adds `filter.lfs.process`, and git then talks the long-running
+        // filter protocol to the fake below, which only knows `cat`. The scanner reads
+        // every config scope on purpose, so the test cannot hide that scope from it.
+        $outside = new Process(['git', 'config', '--get', 'filter.lfs.process'], sys_get_temp_dir());
+        $outside->run();
+
+        if (trim($outside->getOutput()) !== '') {
+            $this->markTestSkipped('git-lfs is configured outside the test repository (filter.lfs.process); the fake git-lfs cannot speak its process protocol.');
+        }
+
         $bin = $this->root.'/fake-bin';
         File::ensureDirectoryExists($bin);
         file_put_contents($bin.'/git-lfs', "#!/bin/sh\necho \"skip=\$GIT_LFS_SKIP_SMUDGE\" >> ".escapeshellarg($marker)."\ncat\n");
