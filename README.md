@@ -1,7 +1,11 @@
 # Filament Security Scanner
 
 [![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
-[![Tests](https://img.shields.io/github/actions/workflow/status/asignua/filament-security-scanner/tests.yml?branch=main&label=tests)](https://github.com/asignua/filament-security-scanner/actions/workflows/tests.yml)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/asignua/filament-security-scanner.svg?style=flat-square)](https://packagist.org/packages/asignua/filament-security-scanner)
+[![Tests](https://img.shields.io/github/actions/workflow/status/asignua/filament-security-scanner/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/asignua/filament-security-scanner/actions/workflows/tests.yml)
+[![License](https://img.shields.io/packagist/l/asignua/filament-security-scanner.svg?style=flat-square)](https://github.com/asignua/filament-security-scanner/blob/main/LICENSE.md)
+
+<img class="filament-hidden" src="https://raw.githubusercontent.com/asignua/filament-security-scanner/v1.0.0/art/cover.jpg" alt="Filament Security Scanner">
 
 A file-system intrusion **detector** for Laravel apps with a Filament 5 panel. It looks for traces of files that were
 already added, changed or swapped: executable code in upload folders, web shells hidden inside images, files that
