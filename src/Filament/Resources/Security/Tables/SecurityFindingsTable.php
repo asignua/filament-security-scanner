@@ -113,7 +113,7 @@ class SecurityFindingsTable
 
                 Filter::make('period')
                     ->label(__('security-scanner::ui.Period'))
-                    ->schema([
+                    ->form([
                         DatePicker::make('from')->label(__('security-scanner::ui.From date')),
                         DatePicker::make('to')->label(__('security-scanner::ui.To date')),
                     ])

@@ -2,6 +2,10 @@
 
 All notable changes to `asignua/filament-security-scanner` are documented here.
 
+## v1.1.0 - 2026-11-10
+
+- Requires Filament ^5.11.2; replaced deprecated Filament API calls: Requires Filament ^5.11.2; replaced deprecated Filament API calls (BaseFilter::schema() → form() in the findings table).
+
 ## v1.0.0 - 2026-11-09
 
 First public release. It continues the private `asign/eegnith-security-scanner` (last tag `v1.x`): scanning behaviour,
