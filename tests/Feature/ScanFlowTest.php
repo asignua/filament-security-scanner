@@ -208,7 +208,7 @@ class ScanFlowTest extends TestCase
         $finding->save();
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage((string) __('security-scanner::ui.Quarantine refused: the file name is not valid UTF-8. The finding stays open; handle the file by hand.'));
+        $this->expectExceptionMessageContaining((string) __('security-scanner::ui.Quarantine refused: the file name is not valid UTF-8. The finding stays open; handle the file by hand.'));
 
         try {
             Quarantine::move($finding, auto: false);

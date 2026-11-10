@@ -68,4 +68,14 @@ abstract class TestCase extends Orchestra
     {
         $this->loadMigrationsFrom(__DIR__.'/../workbench/database/migrations');
     }
+
+    /**
+     * PHPUnit 13.2 перейменував expectExceptionMessage() на expectExceptionMessageIsOrContains().
+     * Laravel 12-гілка CI (testbench 10) тримає PHPUnit на 13.1, де нової назви ще немає.
+     */
+    protected function expectExceptionMessageContaining(string $message): void
+    {
+        $method = method_exists($this, 'expectExceptionMessageIsOrContains') ? 'expectExceptionMessageIsOrContains' : 'expectExceptionMessage';
+        $this->{$method}($message);
+    }
 }
