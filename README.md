@@ -3,7 +3,9 @@
 [![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/asignua/filament-security-scanner.svg?style=flat-square)](https://packagist.org/packages/asignua/filament-security-scanner)
 [![Tests](https://img.shields.io/github/actions/workflow/status/asignua/filament-security-scanner/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/asignua/filament-security-scanner/actions/workflows/tests.yml)
+[![Total Downloads](https://img.shields.io/packagist/dt/asignua/filament-security-scanner.svg?style=flat-square)](https://packagist.org/packages/asignua/filament-security-scanner)
 [![License](https://img.shields.io/packagist/l/asignua/filament-security-scanner.svg?style=flat-square)](https://github.com/asignua/filament-security-scanner/blob/main/LICENSE.md)
+[![Plumb score](https://plumbphp.dev/badges/asignua/filament-security-scanner/composite.svg)](https://plumbphp.dev/asignua/filament-security-scanner)
 
 <img class="filament-hidden" src="https://raw.githubusercontent.com/asignua/filament-security-scanner/v1.0.0/art/cover.jpg" alt="Filament Security Scanner">
 
@@ -329,6 +331,8 @@ See [CHANGELOG.md](CHANGELOG.md).
 - [Record Lock](https://filamentphp.com/plugins/asign-record-lock) - stop two people editing the same record
 
 All plugins: <https://filamentphp.com/plugins?q=asign>
+
+Catalogue of free and commercial plugins: <https://asign.tech/en/plugins>
 
 ## License
 
